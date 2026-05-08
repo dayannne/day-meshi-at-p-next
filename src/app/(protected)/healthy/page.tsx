@@ -1,6 +1,5 @@
-import { HealthyEnvironment } from "@/app/_components/healthy-environment";
+import { HealthyEnvironment } from "@/features/healthy/components/healthy-environment";
 
-// このページは、データベース環境のヘルスチェック用ページです。
 // このコンポーネントがどの種類のデータベースに接続されているかを確認できます。
 export default function HealthyPage() {
   return (
