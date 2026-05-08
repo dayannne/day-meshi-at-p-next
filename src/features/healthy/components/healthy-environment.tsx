@@ -6,10 +6,7 @@ export async function HealthyEnvironment() {
   await connection();
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("healthy_environment")
-    .select("environment")
-    .single();
+  const { data, error } = await supabase.from("healthy_environment").select("environment").single();
 
   if (error) {
     return (

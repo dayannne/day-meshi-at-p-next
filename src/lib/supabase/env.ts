@@ -25,12 +25,11 @@ export function getPublicSupabaseEnv(): PublicSupabaseEnv {
 }
 
 export function getAdminSupabaseEnv(): AdminSupabaseEnv {
-  const adminKey =
-    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const adminKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!adminKey) {
     throw new Error(
-      "Missing required environment variable: SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY",
+      "Missing required environment variable: SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY"
     );
   }
 
