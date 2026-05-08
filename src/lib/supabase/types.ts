@@ -9,6 +9,18 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      healthy_environment: {
+        Row: {
+          environment: "local" | "preview" | "production";
+        };
+        Insert: {
+          environment: "local" | "preview" | "production";
+        };
+        Update: {
+          environment?: "local" | "preview" | "production";
+        };
+        Relationships: [];
+      };
       profile: {
         Row: {
           id: string;
