@@ -8,8 +8,7 @@ create table public.reviews (
   comment text,
   visited_at date,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id, place_id)
+  updated_at timestamptz not null default now()
 );
 
 create index reviews_place_id_idx
