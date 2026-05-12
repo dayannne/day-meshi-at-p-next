@@ -47,6 +47,39 @@ export type Database = {
           },
         ];
       };
+      place_bookmarks: {
+        Row: {
+          user_id: string;
+          place_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          place_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          place_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "place_bookmarks_place_id_fkey";
+            columns: ["place_id"];
+            isOneToOne: false;
+            referencedRelation: "places";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "place_bookmarks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       places: {
         Row: {
           id: string;
@@ -174,6 +207,39 @@ export type Database = {
           },
           {
             foreignKeyName: "reviews_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      review_likes: {
+        Row: {
+          user_id: string;
+          review_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          review_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          review_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_likes_review_id_fkey";
+            columns: ["review_id"];
+            isOneToOne: false;
+            referencedRelation: "reviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_likes_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
