@@ -58,6 +58,8 @@ export type Database = {
           is_gochimeshi: boolean;
           avg_rating: number;
           review_count: number;
+          distance_from_office_meters: number | null;
+          walking_duration_seconds: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -71,6 +73,8 @@ export type Database = {
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
+          distance_from_office_meters?: number | null;
+          walking_duration_seconds?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -84,6 +88,8 @@ export type Database = {
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
+          distance_from_office_meters?: number | null;
+          walking_duration_seconds?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -130,6 +136,7 @@ export type Database = {
           user_id: string;
           place_id: string;
           rating: number;
+          price_range: number | null;
           comment: string | null;
           visited_at: string | null;
           created_at: string;
@@ -140,6 +147,7 @@ export type Database = {
           user_id: string;
           place_id: string;
           rating: number;
+          price_range?: number | null;
           comment?: string | null;
           visited_at?: string | null;
           created_at?: string;
@@ -150,6 +158,7 @@ export type Database = {
           user_id?: string;
           place_id?: string;
           rating?: number;
+          price_range?: number | null;
           comment?: string | null;
           visited_at?: string | null;
           created_at?: string;
