@@ -1,3 +1,3 @@
 export default function HomePage() {
-  return <main className="min-h-screen bg-stone-50 p-6">Test Page</main>;
+  return <main className="min-h-screen bg-stone-50 p-6">PRTest Test Page</main>;
 }
