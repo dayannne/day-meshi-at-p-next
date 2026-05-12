@@ -15,7 +15,39 @@ export type Database = {
         };
         Relationships: [];
       };
-      profile: {
+      invite_codes: {
+        Row: {
+          code: string;
+          used_at: string | null;
+          expires_at: string;
+          used_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          code: string;
+          used_at?: string | null;
+          expires_at: string;
+          used_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          code?: string;
+          used_at?: string | null;
+          expires_at?: string;
+          used_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invite_codes_used_by_fkey";
+            columns: ["used_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      profiles: {
         Row: {
           id: string;
           nickname: string;
@@ -42,7 +74,7 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "profile_id_fkey";
+            foreignKeyName: "profiles_id_fkey";
             columns: ["id"];
             isOneToOne: true;
             referencedRelation: "users";
