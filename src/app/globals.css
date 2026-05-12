@@ -1,26 +1,32 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* 共通フォント設定 */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* デザインシステムの基本カラー */
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-primary: #f18362;
+  --color-secondary: #f7bf6c;
+  --color-tertiary: #824434;
+  --color-neutral-play: #051419;
+
+  /* 背景色 (透過率12.5%) */
+  --color-primary-background: color-mix(in srgb, var(--color-primary) 12.5%, transparent);
+  --color-secondary-background: color-mix(in srgb, var(--color-secondary) 12.5%, transparent);
+  --color-tertiary-background: color-mix(in srgb, var(--color-tertiary) 12.5%, transparent);
+  --color-neutral-background: color-mix(in srgb, var(--color-neutral-play) 12.5%, transparent);
+
+  /* shadcn/ui 互換性用の設定 */
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-neutral-play);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ベーススタイル */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-white);
+  color: var(--color-neutral-play);
+  font-family: var(--font-sans); /* フォントの適用 */
 }
