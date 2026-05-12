@@ -4,6 +4,7 @@ create table public.reviews (
   user_id uuid not null references public.profiles (id) on delete cascade,
   place_id uuid not null references public.places (id) on delete cascade,
   rating smallint not null check (rating between 1 and 5),
+  price_range smallint check (price_range between 1 and 5),
   comment text,
   visited_at date,
   created_at timestamptz not null default now(),

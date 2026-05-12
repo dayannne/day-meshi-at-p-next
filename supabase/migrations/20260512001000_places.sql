@@ -9,6 +9,8 @@ create table public.places (
   is_gochimeshi boolean not null default false,
   avg_rating numeric(3, 2) not null default 0 check (avg_rating between 0 and 5),
   review_count integer not null default 0 check (review_count >= 0),
+  distance_from_office_meters integer check (distance_from_office_meters >= 0),
+  walking_duration_seconds integer check (walking_duration_seconds >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
