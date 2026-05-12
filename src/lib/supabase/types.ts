@@ -47,6 +47,48 @@ export type Database = {
           },
         ];
       };
+      places: {
+        Row: {
+          id: string;
+          google_place_id: string;
+          name: string;
+          lat: number;
+          lng: number;
+          image_url: string | null;
+          is_gochimeshi: boolean;
+          avg_rating: number;
+          review_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          google_place_id: string;
+          name: string;
+          lat: number;
+          lng: number;
+          image_url?: string | null;
+          is_gochimeshi?: boolean;
+          avg_rating?: number;
+          review_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          google_place_id?: string;
+          name?: string;
+          lat?: number;
+          lng?: number;
+          image_url?: string | null;
+          is_gochimeshi?: boolean;
+          avg_rating?: number;
+          review_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
