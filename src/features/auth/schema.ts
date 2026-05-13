@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { z } from "zod";
 
 const DUMMY_EMAIL_DOMAIN = "example.com";
@@ -37,18 +39,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupWithInviteInput = z.infer<typeof signupWithInviteSchema>;
 
 export function buildDummyEmail(nickname: string): string {
-  const localPart = nickname
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "-")
-    .replace(/^[._-]+|[._-]+$/g, "")
-    .replace(/[._-]{2,}/g, "-")
-    .slice(0, 50);
+  const localPart = createHash("sha256").update(nickname, "utf8").digest("hex");
 
-  if (localPart) {
-    return `${localPart}@${DUMMY_EMAIL_DOMAIN}`;
-  }
-
-  const fallbackLocalPart = Buffer.from(nickname.toLowerCase()).toString("hex").slice(0, 50);
-
-  return `user-${fallbackLocalPart}@${DUMMY_EMAIL_DOMAIN}`;
+  return `${localPart}@${DUMMY_EMAIL_DOMAIN}`;
 }
