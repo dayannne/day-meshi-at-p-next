@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -81,7 +82,15 @@ export async function loginAction(
     return { error: "ニックネームまたはパスワードが正しくありません" };
   }
 
+  revalidatePath("/", "layout");
   redirect("/home/places");
+}
+
+export async function logoutAction(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+
+  revalidatePath("/", "layout");
 }
 
 export async function signupWithInviteAction(
@@ -180,6 +189,7 @@ export async function signupWithInviteAction(
   }
 
   if (signupData.session) {
+    revalidatePath("/", "layout");
     redirect("/home/places");
   }
 
