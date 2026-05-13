@@ -13,6 +13,7 @@ export type AuthActionState = {
   fieldErrors?: {
     nickname?: string[];
     password?: string[];
+    confirmPassword?: string[];
     inviteCode?: string[];
   };
   values?: {
@@ -77,7 +78,7 @@ export async function loginAction(
   });
 
   if (error) {
-    return { error: "ログインに失敗しました。入力内容を確認してください。" };
+    return { error: "ニックネームまたはパスワードが正しくありません" };
   }
 
   redirect("/home/places");
@@ -172,7 +173,7 @@ export async function signupWithInviteAction(
     await deleteCreatedUser(userId);
 
     if (profileError.code === "23505") {
-      return { error: "このニックネームはすでに使用されています。" };
+      return { error: "このニックネームは既に使用されています" };
     }
 
     return { error: "プロフィール作成に失敗しました。もう一度お試しください。" };

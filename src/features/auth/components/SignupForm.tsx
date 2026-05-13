@@ -13,6 +13,7 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
   const [state, formAction, isPending] = useActionState(signupWithInviteAction, {});
   const nicknameError = state.fieldErrors?.nickname?.[0];
   const passwordError = state.fieldErrors?.password?.[0];
+  const confirmPasswordError = state.fieldErrors?.confirmPassword?.[0];
   const inviteCodeError = state.fieldErrors?.inviteCode?.[0];
 
   return (
@@ -55,6 +56,23 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
         {passwordError ? (
           <p className="text-sm text-red-600" id="signup-password-error">
             {passwordError}
+          </p>
+        ) : null}
+      </label>
+
+      <label className="block space-y-1">
+        パスワード確認
+        <input
+          className="w-full rounded border px-3 py-2"
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          aria-invalid={confirmPasswordError ? true : undefined}
+          aria-describedby={confirmPasswordError ? "signup-confirm-password-error" : undefined}
+        />
+        {confirmPasswordError ? (
+          <p className="text-sm text-red-600" id="signup-confirm-password-error">
+            {confirmPasswordError}
           </p>
         ) : null}
       </label>
