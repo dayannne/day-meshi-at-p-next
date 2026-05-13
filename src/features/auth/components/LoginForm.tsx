@@ -2,79 +2,91 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { User, Lock } from "lucide-react";
 
 import { loginAction } from "../actions";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/Form";
 
 type LoginFormProps = {
   signupSuccess?: boolean;
 };
 
-export function LoginForm({ signupSuccess = false }: LoginFormProps) {
+export function LoginForm({ signupSuccess }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, {});
-  const nicknameError = state.fieldErrors?.nickname?.[0];
-  const passwordError = state.fieldErrors?.password?.[0];
+  const nicknameError = state?.fieldErrors?.nickname?.[0];
+  const passwordError = state?.fieldErrors?.password?.[0];
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
-      <div>
-        <h1 className="text-xl font-bold">ログイン</h1>
-        <p className="text-sm text-gray-600">Meshi at P にアクセスします。</p>
-      </div>
+    <div className="rounded-xl border border-slate-200 bg-white p-9 shadow-sm">
+      <form action={formAction} className="flex flex-col gap-7" noValidate>
+        <div>
+          <h2 className="text-center text-2xl font-bold text-slate-950">ログイン</h2>
+          {signupSuccess && (
+            <p className="mt-2 text-center text-sm font-medium text-emerald-600">
+              アカウント登録が完了しました。
+              <br />
+              ログインしてください。
+            </p>
+          )}
+        </div>
 
-      {signupSuccess ? (
-        <p className="text-sm text-green-700">
-          アカウントを作成しました。ニックネームでログインしてください。
-        </p>
-      ) : null}
+        <FormItem>
+          <FormLabel className="text-base font-medium text-slate-950">
+            ニックネーム <span className="text-red-600">*</span>
+          </FormLabel>
+          <FormControl className="mt-3">
+            <Input
+              variant="auth"
+              name="nickname"
+              type="text"
+              autoComplete="nickname"
+              defaultValue={state?.values?.nickname}
+              aria-invalid={!!nicknameError}
+              leftIcon={User}
+              placeholder="ニックネームを入力"
+              required
+            />
+          </FormControl>
+          <FormMessage>{nicknameError}</FormMessage>
+        </FormItem>
 
-      {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+        <FormItem>
+          <FormLabel className="text-base font-medium text-slate-950">
+            パスワード <span className="text-red-600">*</span>
+          </FormLabel>
+          <FormControl className="mt-3">
+            <Input
+              variant="auth"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              aria-invalid={!!passwordError}
+              leftIcon={Lock}
+              placeholder="パスワードを入力"
+              required
+            />
+          </FormControl>
+          <FormMessage>{passwordError}</FormMessage>
+        </FormItem>
 
-      <label className="block space-y-1">
-        ニックネーム
-        <input
-          className="w-full rounded border px-3 py-2"
-          name="nickname"
-          type="text"
-          autoComplete="nickname"
-          defaultValue={state.values?.nickname}
-          aria-invalid={nicknameError ? true : undefined}
-          aria-describedby={nicknameError ? "login-nickname-error" : undefined}
-        />
-        {nicknameError ? (
-          <p className="text-sm text-red-600" id="login-nickname-error">
-            {nicknameError}
-          </p>
-        ) : null}
-      </label>
+        {state?.error && <p className="text-sm font-medium text-red-600">{state.error}</p>}
 
-      <label className="block space-y-1">
-        パスワード
-        <input
-          className="w-full rounded border px-3 py-2"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          aria-invalid={passwordError ? true : undefined}
-          aria-describedby={passwordError ? "login-password-error" : undefined}
-        />
-        {passwordError ? (
-          <p className="text-sm text-red-600" id="login-password-error">
-            {passwordError}
-          </p>
-        ) : null}
-      </label>
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "ログイン中..." : "ログイン"}
+        </Button>
 
-      <button
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-        type="submit"
-        disabled={isPending}
-      >
-        {isPending ? "ログイン中..." : "ログイン"}
-      </button>
-
-      <Link className="block text-sm underline" href="/signup">
-        招待コードを持っている場合はこちら
-      </Link>
-    </form>
+        <div className="mt-4 text-center text-sm text-slate-600">
+          まだアカウントをお持ちでないですか？{" "}
+          <Link
+            href="/signup"
+            className="text-primary font-semibold underline-offset-4 hover:underline"
+          >
+            会員登録
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }

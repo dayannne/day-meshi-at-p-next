@@ -11,8 +11,15 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
   const initialInviteCode = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode;
 
   return (
-    <main className="mx-auto max-w-sm p-6">
-      <SignupForm initialInviteCode={initialInviteCode ?? ""} />
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
+      <div className="mb-8 text-center">
+        <h1 className="bg-primary-linear bg-clip-text text-5xl font-black text-transparent">
+          Meshi At Play
+        </h1>
+      </div>
+      <div className="w-full max-w-[520px]">
+        <SignupForm initialInviteCode={initialInviteCode ?? ""} />
+      </div>
     </main>
   );
 }
