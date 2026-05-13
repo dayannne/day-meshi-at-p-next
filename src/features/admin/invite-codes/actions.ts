@@ -2,9 +2,8 @@
 
 import { headers } from "next/headers";
 
+import { requireAdmin } from "@/features/auth/access";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-import { getAdminAccess } from "./auth";
 
 const INVITE_CODE_EXPIRES_IN_DAYS = 7;
 
@@ -23,11 +22,7 @@ function buildInviteLink(origin: string | null, code: string) {
 }
 
 export async function createInviteCodeAction(): Promise<InviteCodeActionState> {
-  const adminAccess = await getAdminAccess();
-
-  if (!adminAccess.ok) {
-    return { error: "招待コードを発行する権限がありません。" };
-  }
+  await requireAdmin();
 
   const code = crypto.randomUUID();
   const expiresAt = new Date(
