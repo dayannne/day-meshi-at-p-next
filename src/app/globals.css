@@ -11,22 +11,23 @@
   --color-primary: #f18362;
   --color-secondary: #f7bf6c;
   --color-tertiary: #824434;
-  --color-neutral-play: #051419;
+  --color-neutral: #051419;
 
   /* 背景色 (透過率12.5%) */
   --color-primary-background: color-mix(in srgb, var(--color-primary) 12.5%, transparent);
   --color-secondary-background: color-mix(in srgb, var(--color-secondary) 12.5%, transparent);
   --color-tertiary-background: color-mix(in srgb, var(--color-tertiary) 12.5%, transparent);
-  --color-neutral-background: color-mix(in srgb, var(--color-neutral-play) 12.5%, transparent);
+  --color-neutral-background: color-mix(in srgb, var(--color-neutral) 12.5%, transparent);
+  --background-image-primary-linear: linear-gradient(180deg, #f18362 0%, #e06a4a 100%);
 
   /* shadcn/ui 互換性用の設定 */
   --color-background: var(--color-white);
-  --color-foreground: var(--color-neutral-play);
+  --color-foreground: var(--color-neutral);
 }
 
 /* ベーススタイル */
 body {
   background-color: var(--color-white);
-  color: var(--color-neutral-play);
+  color: var(--color-neutral);
   font-family: var(--font-sans); /* フォントの適用 */
 }
