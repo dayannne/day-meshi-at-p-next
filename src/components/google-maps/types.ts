@@ -47,6 +47,7 @@ export type GoogleMapProps = {
   language?: string;
   region?: string;
   markers?: GoogleMapMarkerItem[];
+  showDefaultCenterMarker?: boolean;
   selectedMarkerId?: string | null;
   onMarkerSelect?: (markerId: string) => void;
   defaultCenter?: GoogleMapPosition;

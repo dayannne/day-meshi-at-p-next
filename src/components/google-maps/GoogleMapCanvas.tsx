@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 import {
   DEFAULT_GOOGLE_MAP_CENTER,
+  DEFAULT_GOOGLE_MAP_CENTER_MARKER,
   DEFAULT_GOOGLE_MAP_OPTIONS,
   DEFAULT_GOOGLE_MAP_ZOOM,
 } from "./constants";
@@ -33,6 +34,7 @@ type GoogleMapCanvasProps = Omit<
 export function GoogleMapCanvas({
   mapId,
   markers = EMPTY_MARKERS,
+  showDefaultCenterMarker = true,
   selectedMarkerId = null,
   onMarkerSelect,
   defaultCenter = DEFAULT_GOOGLE_MAP_CENTER,
@@ -57,6 +59,9 @@ export function GoogleMapCanvas({
     ...DEFAULT_GOOGLE_MAP_OPTIONS,
     ...mapOptions,
   };
+  const mapMarkers = showDefaultCenterMarker
+    ? [DEFAULT_GOOGLE_MAP_CENTER_MARKER, ...markers]
+    : markers;
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden", className)}>
@@ -82,7 +87,7 @@ export function GoogleMapCanvas({
           zoomControl={mergedMapOptions.zoomControl}
           className={cn("h-full w-full", mapClassName)}
         >
-          {markers.map((marker) => (
+          {mapMarkers.map((marker) => (
             <GoogleMapMarker
               key={marker.id}
               marker={marker}
