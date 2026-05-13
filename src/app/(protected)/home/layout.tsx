@@ -1,32 +1,37 @@
 import React from "react";
 
+import { GoogleMap } from "@/components/google-maps";
+import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
+
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const { apiKey, mapId } = getPublicGoogleMapsEnv();
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="bg-background flex h-screen w-full overflow-hidden">
       {/* --- 1. 縦のメニューバー (x0) --- */}
-      <aside className="w-[80px] h-full border-r border-slate-200 bg-card flex flex-col items-center py-4 z-30"></aside>
+      <aside className="bg-card z-30 flex h-full w-[80px] flex-col items-center border-r border-slate-200 py-4"></aside>
 
       {/* --- コンテンツエリアのコンテナ --- */}
-      <div className="flex-1 flex relative overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* --- 2. お店リストなどが表示される部分 (x80〜) --- */}
-        <main className="relative z-10 h-full flex-1 flex flex-row overflow-hidden">
-          <aside className="w-[560px] h-full border-r border-slate-200 bg-background flex flex-col">
+        <main className="relative z-10 flex h-full flex-1 flex-row overflow-hidden">
+          <aside className="bg-background flex h-full w-[560px] flex-col border-r border-slate-200">
             {/* 検索・フィルター・リストの中身 */}
-            <div className="flex-1 bg-gray-50/50 p-4 italic text-muted-foreground">{children}</div>
+            <div className="text-muted-foreground flex-1 bg-gray-50/50 p-4 italic">{children}</div>
           </aside>
 
           {/* マップ部分：残りの幅をすべて使い、一番背面に配置 */}
-          <section className="flex-1 h-full bg-blue-50">
-            <div className="w-full h-full flex items-center justify-center text-blue-300 font-bold">
-              [ Google Map Canvas ]
+          <section className="h-full flex-1 bg-slate-50">
+            <div className="h-full w-full">
+              <GoogleMap apiKey={apiKey} mapId={mapId} mapInstanceId="home-google-map" />
             </div>
           </section>
         </main>
 
         {/* --- 3. マップの上にモーダル（オーバーレイ）をおける部分 --- */}
         {/* pointer-events-none を指定して、下のマップ操作を邪魔しないようにします */}
-        <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
-          <div id="map-overlay-root" className="w-full h-full relative">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <div id="map-overlay-root" className="relative h-full w-full">
             {/* ポータルや状態管理でここへコンテンツを差し込む想定 */}
           </div>
         </div>
