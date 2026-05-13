@@ -1,9 +1,8 @@
 import {
-  GOCHIMESHI_MARKER_PIN,
+  GOCHIMESHI_MARKER_VARIANT,
   GOCHIMESHI_MARKER_Z_INDEX,
-  NON_GOCHIMESHI_MARKER_PIN,
+  NON_GOCHIMESHI_MARKER_VARIANT,
   NON_GOCHIMESHI_MARKER_Z_INDEX,
-  PLACE_SELECTED_MARKER_PIN,
 } from "@/components/google-maps/constants";
 import type { GoogleMapMarkerItem } from "@/components/google-maps/types";
 import type { DummyPlace } from "@/features/places/data/dummyPlaces";
@@ -16,8 +15,7 @@ export function toPlaceMapMarker(place: DummyPlace): GoogleMapMarkerItem {
       lng: place.lng,
     },
     title: place.name,
-    pin: place.isGochimeshi ? GOCHIMESHI_MARKER_PIN : NON_GOCHIMESHI_MARKER_PIN,
-    selectedPin: PLACE_SELECTED_MARKER_PIN,
+    variant: place.isGochimeshi ? GOCHIMESHI_MARKER_VARIANT : NON_GOCHIMESHI_MARKER_VARIANT,
     zIndex: place.isGochimeshi ? GOCHIMESHI_MARKER_Z_INDEX : NON_GOCHIMESHI_MARKER_Z_INDEX,
   };
 }

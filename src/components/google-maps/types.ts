@@ -16,21 +16,13 @@ export type GoogleMapOptions = {
   zoomControl?: boolean;
 };
 
-export type GoogleMapPinOptions = {
-  background?: string;
-  borderColor?: string;
-  glyphColor?: string;
-  glyphText?: string;
-  glyphSrc?: string;
-  scale?: number;
-};
+export type GoogleMapMarkerVariant = "default-center" | "gochimeshi" | "non-gochimeshi";
 
 export type GoogleMapMarkerItem = {
   id: string;
   position: GoogleMapPosition;
   title?: string;
-  pin?: GoogleMapPinOptions;
-  selectedPin?: GoogleMapPinOptions;
+  variant?: GoogleMapMarkerVariant;
   zIndex?: number;
   selectedZIndex?: number;
 };

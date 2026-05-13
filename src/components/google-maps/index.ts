@@ -3,8 +3,8 @@
 export { GoogleMap } from "./GoogleMap";
 export type {
   GoogleMapMarkerItem,
+  GoogleMapMarkerVariant,
   GoogleMapOptions,
-  GoogleMapPinOptions,
   GoogleMapPosition,
   GoogleMapProps,
   GoogleMapStatusContent,
