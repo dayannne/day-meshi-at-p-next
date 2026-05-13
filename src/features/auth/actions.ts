@@ -2,11 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createHash } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { buildDummyEmail, loginSchema, signupWithInviteSchema } from "./schema";
+import { loginSchema, signupWithInviteSchema } from "./schema";
+
+const DUMMY_EMAIL_DOMAIN = "example.com";
+
+function buildDummyEmail(nickname: string): string {
+  const localPart = createHash("sha256").update(nickname, "utf8").digest("hex");
+
+  return `${localPart}@${DUMMY_EMAIL_DOMAIN}`;
+}
 
 export type AuthActionState = {
   error?: string;
@@ -113,6 +122,29 @@ export async function signupWithInviteAction(
   const email = buildDummyEmail(nickname);
 
   const admin = createAdminClient();
+
+  const { data: existingProfile, error: checkError } = await admin
+    .from("profiles")
+    .select("nickname")
+    .eq("nickname", nickname)
+    .maybeSingle();
+
+  if (checkError) {
+    return { error: "ユーザー確認中にエラーが発生しました。" };
+  }
+
+  if (existingProfile) {
+    return {
+      fieldErrors: {
+        nickname: ["このニックネームは既に使用されています。"],
+      },
+      values: {
+        nickname,
+        inviteCode,
+      },
+    };
+  }
+
   const { data: inviteCodeRow, error: inviteCodeError } = await admin
     .from("invite_codes")
     .select("code, used_at, expires_at")
