@@ -1,3 +1,14 @@
-export default function HomePage() {
-  return <main className="min-h-screen bg-stone-50 p-6">PRTest Test Page</main>;
+import { redirect } from "next/navigation";
+
+import { createClient } from "@/lib/supabase/server";
+
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+
+  if (data?.claims.sub) {
+    redirect("/home/places");
+  }
+
+  redirect("/login");
 }

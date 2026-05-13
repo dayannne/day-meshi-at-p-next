@@ -4,6 +4,29 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getPublicSupabaseEnv } from "./env";
 import type { Database } from "./types";
 
+function isAuthRoute(pathname: string): boolean {
+  return pathname === "/login" || pathname === "/signup";
+}
+
+function isProtectedRoute(pathname: string): boolean {
+  return (
+    pathname === "/home" ||
+    pathname.startsWith("/home/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  );
+}
+
+function redirectWithSessionCookies(request: NextRequest, response: NextResponse, path: string) {
+  const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+
+  return redirectResponse;
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
@@ -35,7 +58,17 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = Boolean(data?.claims.sub);
+  const { pathname, searchParams } = request.nextUrl;
+
+  if (isProtectedRoute(pathname) && !isAuthenticated) {
+    return redirectWithSessionCookies(request, response, "/login");
+  }
+
+  if (isAuthRoute(pathname) && isAuthenticated && !searchParams.has("auth")) {
+    return redirectWithSessionCookies(request, response, "/home/places");
+  }
 
   return response;
 }
