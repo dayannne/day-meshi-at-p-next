@@ -1,10 +1,13 @@
 import React from "react";
 
 import { GoogleMap } from "@/components/google-maps";
+import { dummyPlaces } from "@/features/places/data/dummyPlaces";
+import { toPlaceMapMarkers } from "@/features/places/map/placeMapMarkers";
 import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { apiKey, mapId } = getPublicGoogleMapsEnv();
+  const markers = toPlaceMapMarkers(dummyPlaces);
 
   return (
     <div className="bg-background flex h-screen w-full overflow-hidden">
@@ -23,7 +26,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           {/* マップ部分：残りの幅をすべて使い、一番背面に配置 */}
           <section className="h-full flex-1 bg-slate-50">
             <div className="h-full w-full">
-              <GoogleMap apiKey={apiKey} mapId={mapId} mapInstanceId="home-google-map" />
+              <GoogleMap
+                apiKey={apiKey}
+                mapId={mapId}
+                mapInstanceId="home-google-map"
+                markers={markers}
+              />
             </div>
           </section>
         </main>
