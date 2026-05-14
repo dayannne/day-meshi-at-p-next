@@ -2,6 +2,7 @@ import React from "react";
 
 import { StoreConnectedGoogleMap } from "@/components/google-maps";
 import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
+import { NavigationSidebar } from "@/components/layout/NavigationBar";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { apiKey, mapId } = getPublicGoogleMapsEnv();
@@ -9,8 +10,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <div className="bg-background flex h-screen w-full overflow-hidden">
       {/* --- 1. 縦のメニューバー (x0) --- */}
-      <aside className="bg-card z-30 flex h-full w-[80px] flex-col items-center border-r border-slate-200 py-4"></aside>
-
+      <NavigationSidebar />
       {/* --- コンテンツエリアのコンテナ --- */}
       <div className="relative flex flex-1 overflow-hidden">
         {/* --- 2. お店リストなどが表示される部分 (x80〜) --- */}
