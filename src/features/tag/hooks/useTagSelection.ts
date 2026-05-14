@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TagItem } from "../types"; // 型を別出ししておくと便利
+import { TagItem } from "../types";
 
 export const useTagSelection = (initialSelected: TagItem[] = []) => {
   const [selectedTags, setSelectedTags] = useState<TagItem[]>(initialSelected);
