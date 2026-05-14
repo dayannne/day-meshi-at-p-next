@@ -69,7 +69,7 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
         <div>
           <h2 className="text-center text-2xl font-bold text-slate-950">新規登録</h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            アカウントを作成してサービスを始めましょう
+            招待コードを使ってアカウントを作成しましょう
           </p>
         </div>
 

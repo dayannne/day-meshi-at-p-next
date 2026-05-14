@@ -26,6 +26,17 @@ export const signupPasswordSchema = z
       message:
         "パスワードは英大文字、英小文字、数字、特殊文字のうち3種類以上を組み合わせてください。",
     }
+  )
+  .refine(
+    (password) => {
+      const sequenceRegex =
+        /(012|123|234|345|456|567|678|789|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz)/i;
+      return !sequenceRegex.test(password);
+    },
+    {
+      message: "連続した数字やアルファベットは使用できません。",
+      path: ["password"],
+    }
   );
 
 export const loginSchema = z.object({
