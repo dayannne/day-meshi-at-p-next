@@ -7,7 +7,7 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
       data-slot="textarea"
       className={cn(
         // ベースの形状とフォント設定
-        "flex min-h-[300px] w-full resize-none rounded-2xl border px-4 py-3 text-base transition-all outline-none md:text-sm",
+        "flex min-h-35 w-full resize-none rounded-2xl border px-4 py-3 text-base transition-all outline-none md:text-sm",
         // 背景色とボーダー
         "border-2 border-slate-100 placeholder:text-slate-400",
         // 無効時のスタイル
