@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/src/app/(protected)/admin/test
 
 # next.js
 /.next/
