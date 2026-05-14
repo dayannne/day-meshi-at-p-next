@@ -1,2 +1,2 @@
 export { useMapMarkerStore } from "./useMapMarkerStore";
-export type { MapMarkerStore } from "./useMapMarkerStore";
+export type { MapMarkerSource, MapMarkerStore } from "./useMapMarkerStore";

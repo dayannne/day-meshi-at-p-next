@@ -23,6 +23,7 @@ export type GoogleMapMarkerItem = {
   position: GoogleMapPosition;
   title?: string;
   variant?: GoogleMapMarkerVariant;
+  clickable?: boolean;
   zIndex?: number;
   selectedZIndex?: number;
 };

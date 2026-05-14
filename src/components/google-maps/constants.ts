@@ -29,6 +29,7 @@ export const DEFAULT_GOOGLE_MAP_CENTER_MARKER: GoogleMapMarkerItem = {
   position: DEFAULT_GOOGLE_MAP_CENTER,
   title: "Default map center",
   variant: DEFAULT_CENTER_MARKER_VARIANT,
+  clickable: false,
   zIndex: 0,
 };
 

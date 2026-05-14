@@ -13,13 +13,14 @@ type GoogleMapMarkerProps = {
 
 export function GoogleMapMarker({ marker, selected, onMarkerSelect }: GoogleMapMarkerProps) {
   // 選択後の詳細表示やドメイン処理は外側の責務にし、地図は markerId だけを通知する。
-  const handleClick = onMarkerSelect ? () => onMarkerSelect(marker.id) : undefined;
+  const isClickable = marker.clickable !== false && Boolean(onMarkerSelect);
+  const handleClick = isClickable ? () => onMarkerSelect?.(marker.id) : undefined;
 
   return (
     <AdvancedMarker
       position={marker.position}
       title={marker.title}
-      clickable={Boolean(onMarkerSelect)}
+      clickable={isClickable}
       zIndex={selected ? (marker.selectedZIndex ?? 20) : marker.zIndex}
       onClick={handleClick}
     >
