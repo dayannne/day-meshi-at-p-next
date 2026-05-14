@@ -88,6 +88,7 @@ export type Database = {
           lat: number;
           lng: number;
           image_url: string | null;
+          category: string | null;
           is_gochimeshi: boolean;
           avg_rating: number;
           review_count: number;
@@ -103,6 +104,7 @@ export type Database = {
           lat: number;
           lng: number;
           image_url?: string | null;
+          category?: string | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
@@ -118,6 +120,7 @@ export type Database = {
           lat?: number;
           lng?: number;
           image_url?: string | null;
+          category?: string | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
