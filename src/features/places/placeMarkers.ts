@@ -5,9 +5,9 @@ import {
   NON_GOCHIMESHI_MARKER_Z_INDEX,
 } from "@/components/google-maps/constants";
 import type { GoogleMapMarkerItem } from "@/components/google-maps/types";
-import type { DummyPlace } from "@/features/places/data/dummyPlaces";
+import type { Place } from "@/features/places/types";
 
-export function toPlaceMapMarker(place: DummyPlace): GoogleMapMarkerItem {
+export function toPlaceMarker(place: Place): GoogleMapMarkerItem {
   return {
     id: place.id,
     position: {
@@ -20,6 +20,6 @@ export function toPlaceMapMarker(place: DummyPlace): GoogleMapMarkerItem {
   };
 }
 
-export function toPlaceMapMarkers(places: DummyPlace[]): GoogleMapMarkerItem[] {
-  return places.map(toPlaceMapMarker);
+export function toPlaceMarkers(places: Place[]): GoogleMapMarkerItem[] {
+  return places.map(toPlaceMarker);
 }

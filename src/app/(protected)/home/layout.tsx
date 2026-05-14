@@ -1,13 +1,14 @@
 import React from "react";
 
 import { GoogleMap } from "@/components/google-maps";
-import { dummyPlaces } from "@/features/places/data/dummyPlaces";
-import { toPlaceMapMarkers } from "@/features/places/map/placeMapMarkers";
+import { getPlacesAction } from "@/features/places/actions";
+import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { apiKey, mapId } = getPublicGoogleMapsEnv();
-  const markers = toPlaceMapMarkers(dummyPlaces);
+  const places = await getPlacesAction();
+  const markers = toPlaceMarkers(places);
 
   return (
     <div className="bg-background flex h-screen w-full overflow-hidden">

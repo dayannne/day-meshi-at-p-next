@@ -1,15 +1,6 @@
-export type DummyPlace = {
-  id: string;
-  googlePlaceId: string;
-  name: string;
-  lat: number;
-  lng: number;
-  isGochimeshi: boolean;
-  avgRating: number;
-  reviewCount: number;
-};
+import type { Place } from "@/features/places/types";
 
-export const dummyPlaces: DummyPlace[] = [
+export const dummyPlaces: Place[] = [
   {
     id: "dummy-place-1",
     googlePlaceId: "dummy-google-place-1",
