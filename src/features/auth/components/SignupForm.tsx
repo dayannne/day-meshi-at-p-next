@@ -150,6 +150,7 @@ export function SignupForm({ initialInviteCode = "" }: SignupFormProps) {
               leftIcon={Key}
               placeholder="招待コードを入力"
               required
+              readOnly={!!initialInviteCode}
               onChange={handleInputChange}
             />
           </FormControl>
