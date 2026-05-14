@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
-  "flex h-11 w-full rounded-lg border text-sm transition-all outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-search-cancel-button]:appearance-none",
+  "flex h-11 w-full rounded-lg border text-sm transition-all outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-50 read-only:cursor-default read-only:bg-slate-50 read-only:focus:border-slate-200 [&::-webkit-search-cancel-button]:appearance-none",
   {
     variants: {
       variant: {
