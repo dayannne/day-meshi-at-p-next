@@ -11,6 +11,8 @@ export const dummyPlaces: Place[] = [
     isGochimeshi: true,
     avgRating: 4.6,
     reviewCount: 18,
+    distanceFromOfficeMeters: 1000,
+    walkingDurationSeconds: 600,
   },
   {
     id: "dummy-place-2",
@@ -22,6 +24,8 @@ export const dummyPlaces: Place[] = [
     isGochimeshi: false,
     avgRating: 4.1,
     reviewCount: 9,
+    distanceFromOfficeMeters: 1000,
+    walkingDurationSeconds: 600,
   },
   {
     id: "dummy-place-3",
@@ -33,6 +37,8 @@ export const dummyPlaces: Place[] = [
     isGochimeshi: true,
     avgRating: 4.8,
     reviewCount: 24,
+    distanceFromOfficeMeters: 1000,
+    walkingDurationSeconds: 600,
   },
   {
     id: "dummy-place-4",
@@ -44,5 +50,7 @@ export const dummyPlaces: Place[] = [
     isGochimeshi: false,
     avgRating: 3.9,
     reviewCount: 5,
+    distanceFromOfficeMeters: 1000,
+    walkingDurationSeconds: 600,
   },
 ];
