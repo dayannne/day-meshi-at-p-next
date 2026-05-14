@@ -57,9 +57,9 @@ export function PlacesList({ places }: PlacesListProps) {
               <dt>reviewCount</dt>
               <dd>{place.reviewCount}</dd>
               <dt>distanceFromOfficeMeters</dt>
-              <dd>{place.distanceFromOfficeMeters}</dd>
+              <dd>{place.distanceFromOfficeMeters ?? "-"}</dd>
               <dt>walkingDurationSeconds</dt>
-              <dd>{place.walkingDurationSeconds}</dd>
+              <dd>{place.walkingDurationSeconds ?? "-"}</dd>
             </dl>
           </li>
         );

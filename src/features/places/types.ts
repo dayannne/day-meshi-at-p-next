@@ -5,10 +5,10 @@ export type Place = {
   category: string | null;
   lat: number;
   lng: number;
-  imageUrl?: string;
+  imageUrl: string | null;
   isGochimeshi: boolean;
   avgRating: number;
   reviewCount: number;
-  distanceFromOfficeMeters: number;
-  walkingDurationSeconds: number;
+  distanceFromOfficeMeters: number | null;
+  walkingDurationSeconds: number | null;
 };
