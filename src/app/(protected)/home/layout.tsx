@@ -15,7 +15,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       <div className="relative flex flex-1 overflow-hidden">
         {/* --- 2. お店リストなどが表示される部分 (x80〜) --- */}
         <main className="relative z-10 flex h-full flex-1 flex-row overflow-hidden">
-          <aside className="bg-background flex h-full w-[560px] flex-col border-r border-slate-200">
+          <aside className="bg-background flex h-full w-120 flex-col border-r border-slate-200">
             {/* 検索・フィルター・リストの中身 */}
             <div className="text-muted-foreground flex-1 bg-gray-50/50 p-4 italic">{children}</div>
           </aside>
