@@ -36,7 +36,6 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ComponentProps<"button">, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  fillColor?: string;
 }
 
 function Button({
@@ -44,8 +43,6 @@ function Button({
   variant = "default",
   size = "lg",
   asChild = false,
-  fillColor,
-  style,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot.Root : "button";
