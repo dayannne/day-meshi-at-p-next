@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { TagItem } from "../types";
+import { Tag } from "../types";
 
-export const useTagSelection = (initialSelected: TagItem[] = []) => {
-  const [selectedTags, setSelectedTags] = useState<TagItem[]>(initialSelected);
+export const useTagSelection = (initialSelected: Tag[] = []) => {
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(initialSelected);
 
-  const handleTagToggle = (tag: TagItem) => {
+  const handleTagToggle = (tag: Tag) => {
     setSelectedTags((prev) =>
       prev.some((t) => t.id === tag.id) ? prev.filter((t) => t.id !== tag.id) : [...prev, tag]
     );
