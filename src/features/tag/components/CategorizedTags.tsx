@@ -2,14 +2,14 @@
 
 import { TagButton } from "@/components/ui/TagButton";
 import { cn } from "@/lib/utils";
-import { TagItem } from "../types";
+import { Tag } from "../types";
 
 interface CategorizedTagsProps {
   categoryName: string;
-  tags: TagItem[];
+  tags: Tag[];
   variant?: "primary" | "secondary" | "tertiary" | "neutral";
-  selectedTags?: TagItem[];
-  onTagToggle?: (tagName: TagItem) => void;
+  selectedTags?: Tag[];
+  onTagToggle?: (tagName: Tag) => void;
 }
 
 export const CategorizedTags = ({
