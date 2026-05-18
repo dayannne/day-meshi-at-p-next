@@ -29,8 +29,15 @@ export type GooglePlaceDetails = {
   types: string[];
   category: GooglePlacePrimaryType;
   imageUrl: string | null;
+  photoAttributions: GooglePlacePhotoAttribution[];
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
+};
+
+export type GooglePlacePhotoAttribution = {
+  displayName: string;
+  uri: string | null;
+  photoUri: string | null;
 };
 
 export type SignedGooglePlaceDetails = GooglePlaceDetails & {
@@ -71,9 +78,16 @@ type GooglePlaceDetailsResponse = {
   };
   photos?: Array<{
     name?: string;
+    authorAttributions?: Array<{
+      displayName?: string;
+      uri?: string;
+      photoUri?: string;
+    }>;
   }>;
   types?: string[];
 };
+
+type GooglePlacePhoto = NonNullable<GooglePlaceDetailsResponse["photos"]>[number];
 
 type GooglePlacePhotoResponse = {
   photoUri?: string;
@@ -118,6 +132,7 @@ function createPlaceSelectionPayload(details: GooglePlaceDetails, sessionToken: 
     types: details.types,
     category: details.category,
     imageUrl: details.imageUrl,
+    photoAttributions: details.photoAttributions,
     distanceFromOfficeMeters: details.distanceFromOfficeMeters,
     walkingDurationSeconds: details.walkingDurationSeconds,
     sessionToken,
@@ -261,6 +276,22 @@ async function fetchGooglePlacePhotoUri(photoName: string | undefined): Promise<
   }
 }
 
+function toPhotoAttributions(photo: GooglePlacePhoto | undefined): GooglePlacePhotoAttribution[] {
+  return (photo?.authorAttributions ?? [])
+    .map((attribution): GooglePlacePhotoAttribution | null => {
+      if (!attribution.displayName) {
+        return null;
+      }
+
+      return {
+        displayName: attribution.displayName,
+        uri: attribution.uri ?? null,
+        photoUri: attribution.photoUri ?? null,
+      };
+    })
+    .filter((attribution): attribution is GooglePlacePhotoAttribution => attribution !== null);
+}
+
 async function fetchGoogleWalkingRoute({ lat, lng }: { lat: number; lng: number }): Promise<{
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
@@ -343,7 +374,8 @@ export async function fetchGooglePlaceDetails({
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": getGoogleMapsApiKey(),
-        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,types,photos.name",
+        "X-Goog-FieldMask":
+          "id,displayName,formattedAddress,location,types,photos.name,photos.authorAttributions",
       },
     }
   );
@@ -359,6 +391,7 @@ export async function fetchGooglePlaceDetails({
   const lng = data.location?.longitude;
   const types = data.types ?? [];
   const category = getAllowedPlaceCategory(types);
+  const photo = data.photos?.[0];
 
   if (!resolvedPlaceId || !name || typeof lat !== "number" || typeof lng !== "number") {
     throw new Error("Google place details response is missing required fields.");
@@ -369,7 +402,7 @@ export async function fetchGooglePlaceDetails({
   }
 
   const [imageUrl, walkingRoute] = await Promise.all([
-    fetchGooglePlacePhotoUri(data.photos?.[0]?.name),
+    fetchGooglePlacePhotoUri(photo?.name),
     fetchGoogleWalkingRoute({ lat, lng }),
   ]);
 
@@ -382,6 +415,7 @@ export async function fetchGooglePlaceDetails({
     types,
     category,
     imageUrl,
+    photoAttributions: imageUrl ? toPhotoAttributions(photo) : [],
     distanceFromOfficeMeters: walkingRoute.distanceFromOfficeMeters,
     walkingDurationSeconds: walkingRoute.walkingDurationSeconds,
   };

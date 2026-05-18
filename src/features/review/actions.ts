@@ -55,6 +55,7 @@ function hasValidSelectedPlaceInput(
     place.name &&
     place.category &&
     Array.isArray(place.types) &&
+    Array.isArray(place.photoAttributions) &&
     hasValidCoordinates(place)
   );
 }
@@ -75,6 +76,7 @@ async function upsertPlaceFromGoogleDetails(details: GooglePlaceDetails): Promis
         lat: details.lat,
         lng: details.lng,
         image_url: details.imageUrl,
+        photo_attributions: details.photoAttributions,
         distance_from_office_meters: details.distanceFromOfficeMeters,
         walking_duration_seconds: details.walkingDurationSeconds,
       },

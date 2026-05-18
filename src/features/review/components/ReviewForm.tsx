@@ -15,6 +15,7 @@ import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
 import type { TagGroup } from "@/features/tag/types";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
+import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
 
 import { useReviewForm } from "../hooks/useReviewForm";
 
@@ -54,6 +55,53 @@ function formatDuration(durationSeconds: number | null | undefined) {
   const minutes = Math.max(1, Math.round(durationSeconds / 60));
 
   return `${minutes}分`;
+}
+
+function normalizeAttributionUrl(uri: string | null) {
+  if (!uri) {
+    return null;
+  }
+
+  if (uri.startsWith("//")) {
+    return `https:${uri}`;
+  }
+
+  return uri;
+}
+
+function PhotoAttributions({ attributions }: { attributions: GooglePlacePhotoAttribution[] }) {
+  if (attributions.length === 0) {
+    return null;
+  }
+
+  return (
+    <p className="text-xs leading-snug text-slate-500">
+      Photo:{" "}
+      {attributions.map((attribution, index) => {
+        const href = normalizeAttributionUrl(attribution.uri);
+        const separator = index > 0 ? ", " : "";
+
+        return href ? (
+          <React.Fragment key={`${attribution.displayName}-${index}`}>
+            {separator}
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              {attribution.displayName}
+            </a>
+          </React.Fragment>
+        ) : (
+          <React.Fragment key={`${attribution.displayName}-${index}`}>
+            {separator}
+            {attribution.displayName}
+          </React.Fragment>
+        );
+      })}
+    </p>
+  );
 }
 
 export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
@@ -144,12 +192,15 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
         {state.selectedPlace && (
           <div className="border-primary flex flex-col gap-4 rounded-xl border px-4 py-5 shadow-sm">
             {state.selectedPlace.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={state.selectedPlace.imageUrl}
-                alt=""
-                className="aspect-[4/3] w-full rounded-lg object-cover"
-              />
+              <div className="flex flex-col gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={state.selectedPlace.imageUrl}
+                  alt=""
+                  className="aspect-[4/3] w-full rounded-lg object-cover"
+                />
+                <PhotoAttributions attributions={state.selectedPlace.photoAttributions ?? []} />
+              </div>
             )}
             <div className="flex flex-col gap-3">
               <h2 className="text-primary text-base leading-none font-bold">

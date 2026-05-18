@@ -5,6 +5,7 @@ import { createReviewWithPlaceAction } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
 import type {
   GooglePlacePrimaryType,
+  GooglePlacePhotoAttribution,
   GooglePlaceSuggestion,
   SignedGooglePlaceDetails,
 } from "@/features/places/googlePlaces";
@@ -22,6 +23,7 @@ interface PlaceInfo {
   lng?: number;
   types?: string[];
   imageUrl?: string | null;
+  photoAttributions?: GooglePlacePhotoAttribution[];
   distanceFromOfficeMeters?: number | null;
   walkingDurationSeconds?: number | null;
 }
@@ -52,6 +54,7 @@ function hasSelectedPlaceDetails(
     place.sessionToken &&
     place.selectionSignature &&
     place.category &&
+    Array.isArray(place.photoAttributions) &&
     typeof place.lat === "number" &&
     typeof place.lng === "number" &&
     Number.isFinite(place.lat) &&
@@ -271,6 +274,7 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
           types: selectedPlace.types,
           category: selectedPlace.category,
           imageUrl: selectedPlace.imageUrl ?? null,
+          photoAttributions: selectedPlace.photoAttributions,
           distanceFromOfficeMeters: selectedPlace.distanceFromOfficeMeters ?? null,
           walkingDurationSeconds: selectedPlace.walkingDurationSeconds ?? null,
           sessionToken: selectedPlace.sessionToken,
