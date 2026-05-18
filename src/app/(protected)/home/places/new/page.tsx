@@ -1,15 +1,13 @@
-"use client";
+import { getTagGroupsAction } from "@/features/tag/actions";
 
-import { useRouter } from "next/navigation";
+import { NewPlaceReviewForm } from "./NewPlaceReviewForm";
 
-import { ReviewForm } from "@/features/review/components/ReviewForm";
-
-export default function NewPlaceWithReviewPage() {
-  const router = useRouter();
+export default async function NewPlaceWithReviewPage() {
+  const tagGroups = await getTagGroupsAction();
 
   return (
     <div className="min-h-screen bg-stone-50 p-6">
-      <ReviewForm onClose={() => router.push("/home/places")} />
+      <NewPlaceReviewForm tagGroups={tagGroups} />
     </div>
   );
 }

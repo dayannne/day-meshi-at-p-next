@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
-import { format, parse, isValid } from "date-fns";
-import { dummyTags, dummyCategories } from "@/features/tag/data/dummyTags";
+import type { TagGroup } from "@/features/tag/types";
 
 interface PlaceInfo {
   id?: string;
@@ -9,7 +8,7 @@ interface PlaceInfo {
   address: string;
 }
 
-export function useReviewForm(initialPlace?: PlaceInfo) {
+export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = []) {
   const [selectedPlace, setSelectedPlace] = useState(initialPlace);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -18,11 +17,6 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const { selectedTags, handleTagToggle } = useTagSelection();
   const [isPending, setIsPending] = useState(false);
-
-  const groupedTags = dummyCategories.map((cat) => ({
-    category: cat,
-    tags: dummyTags.filter((tag) => tag.categoryId === cat.id), // categoryIdで紐付け
-  }));
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -36,6 +30,8 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
   };
 
   const onSubmit = async (onSuccess: () => void) => {
+    void onSuccess;
+
     if (!validate()) return;
 
     setIsPending(true);
@@ -73,7 +69,7 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
       errors,
       selectedTags,
       priceRange,
-      groupedTags,
+      groupedTags: tagGroups,
       isPending,
     },
     handlers: {

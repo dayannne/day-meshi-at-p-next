@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover
 import { StarRating } from "@/features/review/components/StarRating";
 import { PriceSelector } from "./PriceSelector";
 import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
+import type { TagGroup } from "@/features/tag/types";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 
@@ -25,6 +26,7 @@ interface PlaceInfo {
 
 interface ReviewFormProps {
   place?: PlaceInfo;
+  tagGroups?: TagGroup[];
   onClose: () => void;
 }
 
@@ -32,8 +34,8 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="m-0 text-sm font-bold">{children}</FormLabel>
 );
 
-export function ReviewForm({ place, onClose }: ReviewFormProps) {
-  const { state, handlers } = useReviewForm(place);
+export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
+  const { state, handlers } = useReviewForm(place, tagGroups);
   const isNewShop = !place;
 
   return (
