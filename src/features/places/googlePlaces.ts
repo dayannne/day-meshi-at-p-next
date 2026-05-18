@@ -1,5 +1,5 @@
 import { DEFAULT_GOOGLE_MAP_CENTER } from "@/components/google-maps/constants";
-import { getPublicGoogleMapsEnv } from "@/lib/google-maps/env";
+import { getServerGoogleMapsEnv } from "@/lib/google-maps/env";
 
 export const GOOGLE_PLACES_SEARCH_CENTER = DEFAULT_GOOGLE_MAP_CENTER;
 export const GOOGLE_PLACES_SEARCH_RADIUS_METERS = 2000;
@@ -61,7 +61,7 @@ type GooglePlaceDetailsResponse = {
 };
 
 function getGoogleMapsApiKey() {
-  return getPublicGoogleMapsEnv().apiKey;
+  return getServerGoogleMapsEnv().apiKey;
 }
 
 function getAllowedPlaceCategory(types: string[]): GooglePlacePrimaryType | null {
@@ -97,7 +97,7 @@ export async function fetchGooglePlaceAutocomplete({
     body: JSON.stringify({
       input: normalizedInput,
       includedPrimaryTypes: GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES,
-      locationBias: {
+      locationRestriction: {
         circle: {
           center: {
             latitude: GOOGLE_PLACES_SEARCH_CENTER.lat,

@@ -3,6 +3,10 @@ type PublicGoogleMapsEnv = {
   mapId: string;
 };
 
+type ServerGoogleMapsEnv = {
+  apiKey: string;
+};
+
 function readRequiredEnv(name: string): string {
   const value = process.env[name];
 
@@ -17,5 +21,11 @@ export function getPublicGoogleMapsEnv(): PublicGoogleMapsEnv {
   return {
     apiKey: readRequiredEnv("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"),
     mapId: readRequiredEnv("NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID"),
+  };
+}
+
+export function getServerGoogleMapsEnv(): ServerGoogleMapsEnv {
+  return {
+    apiKey: readRequiredEnv("GOOGLE_MAPS_API_KEY"),
   };
 }
