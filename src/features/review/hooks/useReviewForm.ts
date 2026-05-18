@@ -4,7 +4,7 @@ import { useMapMarkerStore } from "@/stores";
 import { createReviewWithPlaceAction } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
 import type {
-  GooglePlacePrimaryType,
+  GooglePlaceCategory,
   GooglePlacePhotoAttribution,
   GooglePlaceSuggestion,
   SignedGooglePlaceDetails,
@@ -18,10 +18,11 @@ interface PlaceInfo {
   address: string | null;
   sessionToken?: string;
   selectionSignature?: string;
-  category?: GooglePlacePrimaryType;
   lat?: number;
   lng?: number;
   types?: string[];
+  primaryType?: string | null;
+  category?: GooglePlaceCategory | null;
   imageUrl?: string | null;
   photoAttributions?: GooglePlacePhotoAttribution[];
   distanceFromOfficeMeters?: number | null;
@@ -53,6 +54,7 @@ function hasSelectedPlaceDetails(
     place?.googlePlaceId &&
     place.sessionToken &&
     place.selectionSignature &&
+    place.primaryType &&
     place.category &&
     Array.isArray(place.photoAttributions) &&
     typeof place.lat === "number" &&
@@ -272,6 +274,7 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
           lat: selectedPlace.lat,
           lng: selectedPlace.lng,
           types: selectedPlace.types,
+          primaryType: selectedPlace.primaryType ?? null,
           category: selectedPlace.category,
           imageUrl: selectedPlace.imageUrl ?? null,
           photoAttributions: selectedPlace.photoAttributions,
