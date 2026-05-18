@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import { requireActiveUser } from "@/features/auth/access";
-import { fetchGooglePlaceDetails, type GooglePlaceDetails } from "@/features/places/googlePlaces";
+import {
+  verifyGooglePlaceSelection,
+  type GooglePlaceDetails,
+  type SignedGooglePlaceDetails,
+} from "@/features/places/googlePlaces";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export type SelectedReviewPlaceInput = GooglePlaceDetails & {
-  sessionToken: string;
-};
+export type SelectedReviewPlaceInput = SignedGooglePlaceDetails;
 
 export type CreateReviewWithPlaceInput = {
   place: SelectedReviewPlaceInput;
@@ -41,6 +43,20 @@ function isPriceRange(value: number | null): boolean {
 
 function hasValidCoordinates(place: SelectedReviewPlaceInput): boolean {
   return Number.isFinite(place.lat) && Number.isFinite(place.lng);
+}
+
+function hasValidSelectedPlaceInput(
+  place: SelectedReviewPlaceInput | undefined
+): place is SelectedReviewPlaceInput {
+  return Boolean(
+    place?.googlePlaceId &&
+    place.sessionToken &&
+    place.selectionSignature &&
+    place.name &&
+    place.category &&
+    Array.isArray(place.types) &&
+    hasValidCoordinates(place)
+  );
 }
 
 function normalizeVisitDate(value: string | null): string | null {
@@ -117,11 +133,21 @@ export async function createReviewWithPlaceAction(
 ): Promise<CreateReviewWithPlaceResult> {
   const user = await requireActiveUser();
 
-  if (!input.place?.googlePlaceId || !input.place.sessionToken) {
+  if (!input.place?.googlePlaceId || !input.place.sessionToken || !input.place.selectionSignature) {
     return { success: false, error: "お店を選択してください。" };
   }
 
-  if (!input.place.name || !input.place.category || !hasValidCoordinates(input.place)) {
+  if (!hasValidSelectedPlaceInput(input.place)) {
+    return { success: false, error: "お店の情報を取得できませんでした。" };
+  }
+
+  if (
+    !verifyGooglePlaceSelection({
+      details: input.place,
+      sessionToken: input.place.sessionToken,
+      selectionSignature: input.place.selectionSignature,
+    })
+  ) {
     return { success: false, error: "お店の情報を取得できませんでした。" };
   }
 
@@ -134,10 +160,7 @@ export async function createReviewWithPlaceAction(
   }
 
   try {
-    const placeDetails = await fetchGooglePlaceDetails({
-      placeId: input.place.googlePlaceId,
-    });
-    const placeId = await upsertPlaceFromGoogleDetails(placeDetails);
+    const placeId = await upsertPlaceFromGoogleDetails(input.place);
     const supabase = await createClient();
     const { data: review, error: reviewError } = await supabase
       .from("reviews")

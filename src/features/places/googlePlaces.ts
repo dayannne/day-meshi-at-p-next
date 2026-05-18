@@ -1,3 +1,7 @@
+import "server-only";
+
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { DEFAULT_GOOGLE_MAP_CENTER } from "@/components/google-maps/constants";
 import { getServerGoogleMapsEnv } from "@/lib/google-maps/env";
 
@@ -27,6 +31,11 @@ export type GooglePlaceDetails = {
   imageUrl: string | null;
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
+};
+
+export type SignedGooglePlaceDetails = GooglePlaceDetails & {
+  sessionToken: string;
+  selectionSignature: string;
 };
 
 type GoogleAutocompleteResponse = {
@@ -97,6 +106,50 @@ function parseDurationSeconds(duration: string | undefined): number | null {
   }
 
   return Number(match[1]);
+}
+
+function createPlaceSelectionPayload(details: GooglePlaceDetails, sessionToken: string) {
+  return JSON.stringify({
+    googlePlaceId: details.googlePlaceId,
+    name: details.name,
+    address: details.address,
+    lat: details.lat,
+    lng: details.lng,
+    types: details.types,
+    category: details.category,
+    imageUrl: details.imageUrl,
+    distanceFromOfficeMeters: details.distanceFromOfficeMeters,
+    walkingDurationSeconds: details.walkingDurationSeconds,
+    sessionToken,
+  });
+}
+
+export function signGooglePlaceSelection(details: GooglePlaceDetails, sessionToken: string) {
+  return createHmac("sha256", getGoogleMapsApiKey())
+    .update(createPlaceSelectionPayload(details, sessionToken))
+    .digest("base64url");
+}
+
+export function verifyGooglePlaceSelection({
+  details,
+  sessionToken,
+  selectionSignature,
+}: {
+  details: GooglePlaceDetails;
+  sessionToken: string;
+  selectionSignature: string;
+}) {
+  if (!selectionSignature) {
+    return false;
+  }
+
+  const expectedSignature = signGooglePlaceSelection(details, sessionToken);
+  const expectedBuffer = Buffer.from(expectedSignature);
+  const actualBuffer = Buffer.from(selectionSignature);
+
+  return (
+    expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer)
+  );
 }
 
 export async function fetchGooglePlaceAutocomplete({

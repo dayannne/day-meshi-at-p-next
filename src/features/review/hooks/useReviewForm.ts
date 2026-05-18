@@ -4,9 +4,9 @@ import { useMapMarkerStore } from "@/stores";
 import { createReviewWithPlaceAction } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
 import type {
-  GooglePlaceDetails,
   GooglePlacePrimaryType,
   GooglePlaceSuggestion,
+  SignedGooglePlaceDetails,
 } from "@/features/places/googlePlaces";
 import type { TagGroup } from "@/features/tag/types";
 
@@ -16,6 +16,7 @@ interface PlaceInfo {
   name: string;
   address: string | null;
   sessionToken?: string;
+  selectionSignature?: string;
   category?: GooglePlacePrimaryType;
   lat?: number;
   lng?: number;
@@ -25,9 +26,7 @@ interface PlaceInfo {
   walkingDurationSeconds?: number | null;
 }
 
-type SelectedPlaceInfo = GooglePlaceDetails & {
-  sessionToken: string;
-};
+type SelectedPlaceInfo = SignedGooglePlaceDetails;
 
 function createSessionToken() {
   return crypto.randomUUID();
@@ -51,6 +50,7 @@ function hasSelectedPlaceDetails(
   return Boolean(
     place?.googlePlaceId &&
     place.sessionToken &&
+    place.selectionSignature &&
     place.category &&
     typeof place.lat === "number" &&
     typeof place.lng === "number" &&
@@ -274,6 +274,7 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
           distanceFromOfficeMeters: selectedPlace.distanceFromOfficeMeters ?? null,
           walkingDurationSeconds: selectedPlace.walkingDurationSeconds ?? null,
           sessionToken: selectedPlace.sessionToken,
+          selectionSignature: selectedPlace.selectionSignature,
         },
         rating: rating,
         priceRange: priceRange,

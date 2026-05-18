@@ -1,5 +1,5 @@
 import { requireActiveUser } from "@/features/auth/access";
-import { fetchGooglePlaceDetails } from "@/features/places/googlePlaces";
+import { fetchGooglePlaceDetails, signGooglePlaceSelection } from "@/features/places/googlePlaces";
 
 export async function POST(request: Request) {
   await requireActiveUser();
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       place: {
         ...place,
         sessionToken,
+        selectionSignature: signGooglePlaceSelection(place, sessionToken),
       },
     });
   } catch {
