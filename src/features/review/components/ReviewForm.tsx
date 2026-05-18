@@ -46,6 +46,16 @@ function formatDistance(distanceMeters: number | null) {
   return `${(distanceMeters / 1000).toFixed(1)}km`;
 }
 
+function formatDuration(durationSeconds: number | null | undefined) {
+  if (durationSeconds == null) {
+    return null;
+  }
+
+  const minutes = Math.max(1, Math.round(durationSeconds / 60));
+
+  return `${minutes}分`;
+}
+
 export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
   const { state, handlers } = useReviewForm(place, tagGroups);
   const isNewShop = !place;
@@ -92,11 +102,16 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
                   const distance = formatDistance(suggestion.distanceMeters);
 
                   return (
-                    <li key={suggestion.placeId} className="border-b border-slate-100 last:border-0">
+                    <li
+                      key={suggestion.placeId}
+                      className="border-b border-slate-100 last:border-0"
+                    >
                       <button
                         type="button"
                         className="flex w-full flex-col gap-1 px-3 py-2 text-left transition-colors hover:bg-slate-50"
-                        onClick={() => handlers.selectPlaceSuggestion(suggestion)}
+                        onClick={() => {
+                          void handlers.selectPlaceSuggestion(suggestion);
+                        }}
                       >
                         <span className="text-sm font-bold text-slate-900">
                           {suggestion.mainText}
@@ -111,6 +126,12 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
                 })}
               </ul>
             )}
+            {state.isLoadingPlaceDetails && (
+              <p className="text-sm font-medium text-slate-500">お店の詳細を取得中...</p>
+            )}
+            {state.placeDetailsError && (
+              <p className="text-sm font-medium text-red-500">{state.placeDetailsError}</p>
+            )}
             {state.errors.place && (
               <p className="text-destructive text-sm font-medium text-red-500">
                 {state.errors.place}
@@ -121,14 +142,42 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
 
         {/* 2. 店舗情報表示 */}
         {state.selectedPlace && (
-          <div className="border-primary flex flex-col gap-4 rounded-xl border px-4 py-6 shadow-sm">
-            <h2 className="text-primary text-base leading-none font-bold">
-              {state.selectedPlace.name}
-            </h2>
-            <div className="flex items-center gap-2 text-slate-500">
-              <MapPin size={16} className="text-primary shrink-0" strokeWidth={1.5} />
-              <p className="text-sm leading-none font-medium">{state.selectedPlace.address}</p>
+          <div className="border-primary flex flex-col gap-4 rounded-xl border px-4 py-5 shadow-sm">
+            {state.selectedPlace.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={state.selectedPlace.imageUrl}
+                alt=""
+                className="aspect-[4/3] w-full rounded-lg object-cover"
+              />
+            )}
+            <div className="flex flex-col gap-3">
+              <h2 className="text-primary text-base leading-none font-bold">
+                {state.selectedPlace.name}
+              </h2>
+              <div className="flex items-center gap-2 text-slate-500">
+                <MapPin size={16} className="text-primary shrink-0" strokeWidth={1.5} />
+                <p className="text-sm leading-snug font-medium">
+                  {state.selectedPlace.address ?? "-"}
+                </p>
+              </div>
             </div>
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2 text-xs text-slate-600">
+              <dt className="font-bold text-slate-900">google_place_id</dt>
+              <dd className="break-all">{state.selectedPlace.googlePlaceId ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">category</dt>
+              <dd>{state.selectedPlace.category ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">lat</dt>
+              <dd>{state.selectedPlace.lat ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">lng</dt>
+              <dd>{state.selectedPlace.lng ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">image_url</dt>
+              <dd className="break-all">{state.selectedPlace.imageUrl ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">distance</dt>
+              <dd>{formatDistance(state.selectedPlace.distanceFromOfficeMeters ?? null) ?? "-"}</dd>
+              <dt className="font-bold text-slate-900">walking</dt>
+              <dd>{formatDuration(state.selectedPlace.walkingDurationSeconds) ?? "-"}</dd>
+            </dl>
           </div>
         )}
 

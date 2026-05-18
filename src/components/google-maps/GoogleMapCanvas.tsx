@@ -1,6 +1,7 @@
 "use client";
 
-import { APILoadingStatus, Map, useApiLoadingStatus } from "@vis.gl/react-google-maps";
+import { APILoadingStatus, Map, useApiLoadingStatus, useMap } from "@vis.gl/react-google-maps";
+import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ export function GoogleMapCanvas({
   loadError,
 }: GoogleMapCanvasProps) {
   const loadingStatus = useApiLoadingStatus();
+  const markerClickPanSkipRef = useRef<string | null>(null);
 
   // 認証失敗も利用者にとってはロード失敗と同じなので、同じフォールバック表示にまとめる。
   const hasLoadError =
@@ -62,6 +64,11 @@ export function GoogleMapCanvas({
   const mapMarkers = showDefaultCenterMarker
     ? [DEFAULT_GOOGLE_MAP_CENTER_MARKER, ...markers]
     : markers;
+  const selectedMarker = mapMarkers.find((marker) => marker.id === selectedMarkerId);
+  const handleMarkerSelect = (markerId: string) => {
+    markerClickPanSkipRef.current = markerId;
+    onMarkerSelect?.(markerId);
+  };
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden", className)}>
@@ -87,12 +94,16 @@ export function GoogleMapCanvas({
           zoomControl={mergedMapOptions.zoomControl}
           className={cn("h-full w-full", mapClassName)}
         >
+          <GoogleMapSelectedMarkerPan
+            marker={selectedMarker}
+            markerClickPanSkipRef={markerClickPanSkipRef}
+          />
           {mapMarkers.map((marker) => (
             <GoogleMapMarker
               key={marker.id}
               marker={marker}
               selected={marker.id === selectedMarkerId}
-              onMarkerSelect={onMarkerSelect}
+              onMarkerSelect={onMarkerSelect ? handleMarkerSelect : undefined}
             />
           ))}
           {children}
@@ -100,4 +111,33 @@ export function GoogleMapCanvas({
       ) : null}
     </div>
   );
+}
+
+function GoogleMapSelectedMarkerPan({
+  marker,
+  markerClickPanSkipRef,
+}: {
+  marker?: GoogleMapMarkerItem;
+  markerClickPanSkipRef: { current: string | null };
+}) {
+  const map = useMap();
+  const markerId = marker?.id;
+  const position = marker?.position;
+  const lat = position?.lat;
+  const lng = position?.lng;
+
+  useEffect(() => {
+    if (!map || !markerId || lat == null || lng == null) {
+      return;
+    }
+
+    if (markerClickPanSkipRef.current === markerId) {
+      markerClickPanSkipRef.current = null;
+      return;
+    }
+
+    map.panTo({ lat, lng });
+  }, [lat, lng, map, markerClickPanSkipRef, markerId]);
+
+  return null;
 }

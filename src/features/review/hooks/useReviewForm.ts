@@ -1,16 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { NON_GOCHIMESHI_MARKER_VARIANT } from "@/components/google-maps/constants";
+import { useMapMarkerStore } from "@/stores";
 import { createReviewWithPlaceAction } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
-import type { GooglePlaceSuggestion } from "@/features/places/googlePlaces";
+import type {
+  GooglePlaceDetails,
+  GooglePlacePrimaryType,
+  GooglePlaceSuggestion,
+} from "@/features/places/googlePlaces";
 import type { TagGroup } from "@/features/tag/types";
 
 interface PlaceInfo {
   id?: string;
   googlePlaceId?: string;
   name: string;
-  address: string;
+  address: string | null;
   sessionToken?: string;
+  category?: GooglePlacePrimaryType;
+  lat?: number;
+  lng?: number;
+  types?: string[];
+  imageUrl?: string | null;
+  distanceFromOfficeMeters?: number | null;
+  walkingDurationSeconds?: number | null;
 }
+
+type SelectedPlaceInfo = GooglePlaceDetails & {
+  sessionToken: string;
+};
 
 function createSessionToken() {
   return crypto.randomUUID();
@@ -28,13 +45,35 @@ function formatDateInput(date: Date | undefined): string | null {
   return `${year}-${month}-${day}`;
 }
 
+function hasSelectedPlaceDetails(
+  place: PlaceInfo | SelectedPlaceInfo | undefined
+): place is SelectedPlaceInfo {
+  return Boolean(
+    place?.googlePlaceId &&
+    place.sessionToken &&
+    place.category &&
+    typeof place.lat === "number" &&
+    typeof place.lng === "number" &&
+    Number.isFinite(place.lat) &&
+    Number.isFinite(place.lng)
+  );
+}
+
 export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = []) {
-  const [selectedPlace, setSelectedPlace] = useState(initialPlace);
+  const setMapMarkers = useMapMarkerStore((state) => state.setMarkers);
+  const clearMapMarkers = useMapMarkerStore((state) => state.clearMarkers);
+  const selectMapMarker = useMapMarkerStore((state) => state.selectMarker);
+  const placeDetailsAbortRef = useRef<AbortController | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceInfo | SelectedPlaceInfo | undefined>(
+    initialPlace
+  );
   const [placeSearchInput, setPlaceSearchInput] = useState(initialPlace?.name ?? "");
   const [placeSuggestions, setPlaceSuggestions] = useState<GooglePlaceSuggestion[]>([]);
   const [placeSessionToken, setPlaceSessionToken] = useState(createSessionToken);
   const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState<string | null>(null);
+  const [isLoadingPlaceDetails, setIsLoadingPlaceDetails] = useState(false);
+  const [placeDetailsError, setPlaceDetailsError] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [visitDate, setVisitDate] = useState<Date | undefined>();
@@ -42,6 +81,13 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const { selectedTags, handleTagToggle } = useTagSelection();
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      placeDetailsAbortRef.current?.abort();
+      clearMapMarkers("review-place");
+    };
+  }, [clearMapMarkers]);
 
   useEffect(() => {
     const normalizedInput = placeSearchInput.trim();
@@ -96,11 +142,15 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
   }, [initialPlace, placeSearchInput, placeSessionToken, selectedPlace]);
 
   const setPlaceSearch = (value: string) => {
+    placeDetailsAbortRef.current?.abort();
     setPlaceSearchInput(value);
+    setPlaceDetailsError(null);
+    setIsLoadingPlaceDetails(false);
 
     if (selectedPlace) {
       setSelectedPlace(undefined);
       setPlaceSessionToken(createSessionToken());
+      clearMapMarkers("review-place");
     }
 
     if (value.trim().length < 2) {
@@ -110,27 +160,85 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
     }
   };
 
-  const selectPlaceSuggestion = (suggestion: GooglePlaceSuggestion) => {
-    setSelectedPlace({
-      googlePlaceId: suggestion.placeId,
-      name: suggestion.mainText,
-      address: suggestion.secondaryText ?? suggestion.text,
-      sessionToken: placeSessionToken,
-    });
-    setPlaceSearchInput(suggestion.text);
+  const selectPlaceSuggestion = async (suggestion: GooglePlaceSuggestion) => {
+    placeDetailsAbortRef.current?.abort();
+    const abortController = new AbortController();
+    const currentSessionToken = placeSessionToken;
+
+    placeDetailsAbortRef.current = abortController;
+    setPlaceSearchInput(suggestion.mainText);
     setPlaceSuggestions([]);
     setPlaceSearchError(null);
-    setErrors((currentErrors) => {
-      const { place, ...restErrors } = currentErrors;
-      void place;
+    setPlaceDetailsError(null);
+    setSelectedPlace(undefined);
+    setIsLoadingPlaceDetails(true);
+    clearMapMarkers("review-place");
 
-      return restErrors;
-    });
+    try {
+      const response = await fetch("/api/google-places/details", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          placeId: suggestion.placeId,
+          sessionToken: currentSessionToken,
+        }),
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load place details.");
+      }
+
+      const data = (await response.json()) as {
+        place?: SelectedPlaceInfo;
+      };
+      const place = data.place;
+
+      if (!place) {
+        throw new Error("Place details response is empty.");
+      }
+
+      setPlaceSearchInput(place.name);
+      setSelectedPlace(place);
+      setMapMarkers("review-place", [
+        {
+          id: place.googlePlaceId,
+          position: {
+            lat: place.lat,
+            lng: place.lng,
+          },
+          title: place.name,
+          variant: NON_GOCHIMESHI_MARKER_VARIANT,
+        },
+      ]);
+      selectMapMarker(place.googlePlaceId);
+      setErrors((currentErrors) => {
+        const { place, ...restErrors } = currentErrors;
+        void place;
+
+        return restErrors;
+      });
+    } catch {
+      if (abortController.signal.aborted) {
+        return;
+      }
+
+      setSelectedPlace(undefined);
+      setPlaceDetailsError("お店の詳細情報を取得できませんでした。");
+    } finally {
+      if (!abortController.signal.aborted) {
+        setIsLoadingPlaceDetails(false);
+      }
+    }
   };
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!selectedPlace?.googlePlaceId) newErrors.place = "お店を選択してください。";
+    if (!hasSelectedPlaceDetails(selectedPlace)) {
+      newErrors.place = "お店を選択してください。";
+    }
     if (rating === 0) newErrors.rating = "レートを選択してください。";
     // 価格帯の必須チェック
     if (priceRange === null) newErrors.priceRange = "価格帯を選択してください。";
@@ -140,16 +248,33 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
   };
 
   const onSubmit = async (onSuccess: () => void) => {
-    void onSuccess;
-
     if (!validate()) return;
 
     setIsPending(true);
 
     try {
+      if (!hasSelectedPlaceDetails(selectedPlace)) {
+        setErrors((currentErrors) => ({
+          ...currentErrors,
+          place: "お店を選択してください。",
+        }));
+        return;
+      }
+
       const result = await createReviewWithPlaceAction({
-        googlePlaceId: selectedPlace?.googlePlaceId ?? "",
-        placeSessionToken: selectedPlace?.sessionToken ?? "",
+        place: {
+          googlePlaceId: selectedPlace.googlePlaceId,
+          name: selectedPlace.name,
+          address: selectedPlace.address,
+          lat: selectedPlace.lat,
+          lng: selectedPlace.lng,
+          types: selectedPlace.types,
+          category: selectedPlace.category,
+          imageUrl: selectedPlace.imageUrl ?? null,
+          distanceFromOfficeMeters: selectedPlace.distanceFromOfficeMeters ?? null,
+          walkingDurationSeconds: selectedPlace.walkingDurationSeconds ?? null,
+          sessionToken: selectedPlace.sessionToken,
+        },
         rating: rating,
         priceRange: priceRange,
         comment: comment,
@@ -183,6 +308,8 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
       placeSuggestions,
       isSearchingPlaces,
       placeSearchError,
+      isLoadingPlaceDetails,
+      placeDetailsError,
       rating,
       comment,
       visitDate,

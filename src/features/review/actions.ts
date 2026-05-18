@@ -7,9 +7,12 @@ import { fetchGooglePlaceDetails, type GooglePlaceDetails } from "@/features/pla
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+export type SelectedReviewPlaceInput = GooglePlaceDetails & {
+  sessionToken: string;
+};
+
 export type CreateReviewWithPlaceInput = {
-  googlePlaceId: string;
-  placeSessionToken: string;
+  place: SelectedReviewPlaceInput;
   rating: number;
   priceRange: number | null;
   comment: string;
@@ -36,6 +39,10 @@ function isPriceRange(value: number | null): boolean {
   return value === null || (Number.isInteger(value) && value >= 1 && value <= 5);
 }
 
+function hasValidCoordinates(place: SelectedReviewPlaceInput): boolean {
+  return Number.isFinite(place.lat) && Number.isFinite(place.lng);
+}
+
 function normalizeVisitDate(value: string | null): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
@@ -46,11 +53,14 @@ async function upsertPlaceFromGoogleDetails(details: GooglePlaceDetails): Promis
     .from("places")
     .upsert(
       {
-        google_place_id: details.placeId,
+        google_place_id: details.googlePlaceId,
         name: details.name,
         category: details.category,
         lat: details.lat,
         lng: details.lng,
+        image_url: details.imageUrl,
+        distance_from_office_meters: details.distanceFromOfficeMeters,
+        walking_duration_seconds: details.walkingDurationSeconds,
       },
       {
         onConflict: "google_place_id",
@@ -107,8 +117,12 @@ export async function createReviewWithPlaceAction(
 ): Promise<CreateReviewWithPlaceResult> {
   const user = await requireActiveUser();
 
-  if (!input.googlePlaceId || !input.placeSessionToken) {
+  if (!input.place?.googlePlaceId || !input.place.sessionToken) {
     return { success: false, error: "お店を選択してください。" };
+  }
+
+  if (!input.place.name || !input.place.category || !hasValidCoordinates(input.place)) {
+    return { success: false, error: "お店の情報を取得できませんでした。" };
   }
 
   if (!isRating(input.rating)) {
@@ -121,8 +135,7 @@ export async function createReviewWithPlaceAction(
 
   try {
     const placeDetails = await fetchGooglePlaceDetails({
-      placeId: input.googlePlaceId,
-      sessionToken: input.placeSessionToken,
+      placeId: input.place.googlePlaceId,
     });
     const placeId = await upsertPlaceFromGoogleDetails(placeDetails);
     const supabase = await createClient();

@@ -17,13 +17,16 @@ export type GooglePlaceSuggestion = {
 };
 
 export type GooglePlaceDetails = {
-  placeId: string;
+  googlePlaceId: string;
   name: string;
   address: string | null;
   lat: number;
   lng: number;
   types: string[];
   category: GooglePlacePrimaryType;
+  imageUrl: string | null;
+  distanceFromOfficeMeters: number | null;
+  walkingDurationSeconds: number | null;
 };
 
 type GoogleAutocompleteResponse = {
@@ -57,7 +60,21 @@ type GooglePlaceDetailsResponse = {
     latitude?: number;
     longitude?: number;
   };
+  photos?: Array<{
+    name?: string;
+  }>;
   types?: string[];
+};
+
+type GooglePlacePhotoResponse = {
+  photoUri?: string;
+};
+
+type GoogleRouteResponse = {
+  routes?: Array<{
+    distanceMeters?: number;
+    duration?: string;
+  }>;
 };
 
 function getGoogleMapsApiKey() {
@@ -66,6 +83,20 @@ function getGoogleMapsApiKey() {
 
 function getAllowedPlaceCategory(types: string[]): GooglePlacePrimaryType | null {
   return GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES.find((type) => types.includes(type)) ?? null;
+}
+
+function parseDurationSeconds(duration: string | undefined): number | null {
+  if (!duration) {
+    return null;
+  }
+
+  const match = duration.match(/^(\d+)s$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]);
 }
 
 export async function fetchGooglePlaceAutocomplete({
@@ -145,18 +176,112 @@ export async function fetchGooglePlaceAutocomplete({
     .filter((suggestion): suggestion is GooglePlaceSuggestion => suggestion !== null);
 }
 
+async function fetchGooglePlacePhotoUri(photoName: string | undefined): Promise<string | null> {
+  if (!photoName) {
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      key: getGoogleMapsApiKey(),
+      maxWidthPx: "800",
+      maxHeightPx: "600",
+      skipHttpRedirect: "true",
+    });
+    const response = await fetch(
+      `https://places.googleapis.com/v1/${encodeURI(photoName)}/media?${params}`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as GooglePlacePhotoResponse;
+
+    return data.photoUri ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGoogleWalkingRoute({ lat, lng }: { lat: number; lng: number }): Promise<{
+  distanceFromOfficeMeters: number | null;
+  walkingDurationSeconds: number | null;
+}> {
+  try {
+    const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": getGoogleMapsApiKey(),
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration",
+      },
+      body: JSON.stringify({
+        origin: {
+          location: {
+            latLng: {
+              latitude: GOOGLE_PLACES_SEARCH_CENTER.lat,
+              longitude: GOOGLE_PLACES_SEARCH_CENTER.lng,
+            },
+          },
+        },
+        destination: {
+          location: {
+            latLng: {
+              latitude: lat,
+              longitude: lng,
+            },
+          },
+        },
+        travelMode: "WALK",
+        languageCode: "ja",
+        units: "METRIC",
+      }),
+    });
+
+    if (!response.ok) {
+      return {
+        distanceFromOfficeMeters: null,
+        walkingDurationSeconds: null,
+      };
+    }
+
+    const data = (await response.json()) as GoogleRouteResponse;
+    const route = data.routes?.[0];
+
+    return {
+      distanceFromOfficeMeters:
+        typeof route?.distanceMeters === "number" ? route.distanceMeters : null,
+      walkingDurationSeconds: parseDurationSeconds(route?.duration),
+    };
+  } catch {
+    return {
+      distanceFromOfficeMeters: null,
+      walkingDurationSeconds: null,
+    };
+  }
+}
+
 export async function fetchGooglePlaceDetails({
   placeId,
   sessionToken,
 }: {
   placeId: string;
-  sessionToken: string;
+  sessionToken?: string;
 }): Promise<GooglePlaceDetails> {
   const params = new URLSearchParams({
     languageCode: "ja",
     regionCode: "jp",
-    sessionToken,
   });
+
+  if (sessionToken) {
+    params.set("sessionToken", sessionToken);
+  }
   const response = await fetch(
     `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?${params}`,
     {
@@ -165,7 +290,7 @@ export async function fetchGooglePlaceDetails({
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": getGoogleMapsApiKey(),
-        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,types",
+        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,types,photos.name",
       },
     }
   );
@@ -190,13 +315,21 @@ export async function fetchGooglePlaceDetails({
     throw new Error("Selected Google place is not an allowed food or drink place.");
   }
 
+  const [imageUrl, walkingRoute] = await Promise.all([
+    fetchGooglePlacePhotoUri(data.photos?.[0]?.name),
+    fetchGoogleWalkingRoute({ lat, lng }),
+  ]);
+
   return {
-    placeId: resolvedPlaceId,
+    googlePlaceId: resolvedPlaceId,
     name,
     address: data.formattedAddress ?? null,
     lat,
     lng,
     types,
     category,
+    imageUrl,
+    distanceFromOfficeMeters: walkingRoute.distanceFromOfficeMeters,
+    walkingDurationSeconds: walkingRoute.walkingDurationSeconds,
   };
 }

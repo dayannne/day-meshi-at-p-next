@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 import type { GoogleMapMarkerItem } from "@/components/google-maps/types";
 
-export type MapMarkerSource = "places" | "bookmarks";
+export type MapMarkerSource = "places" | "bookmarks" | "review-place";
 
 export type MapMarkerStore = {
   markers: GoogleMapMarkerItem[];
