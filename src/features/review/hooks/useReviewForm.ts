@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createReviewWithPlaceAction } from "@/features/review/actions";
 import { useTagSelection } from "@/features/tag/hooks/useTagSelection";
 import type { GooglePlaceSuggestion } from "@/features/places/googlePlaces";
 import type { TagGroup } from "@/features/tag/types";
@@ -13,6 +14,18 @@ interface PlaceInfo {
 
 function createSessionToken() {
   return crypto.randomUUID();
+}
+
+function formatDateInput(date: Date | undefined): string | null {
+  if (!date) {
+    return null;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = []) {
@@ -117,7 +130,7 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!selectedPlace) newErrors.place = "お店を選択してください。";
+    if (!selectedPlace?.googlePlaceId) newErrors.place = "お店を選択してください。";
     if (rating === 0) newErrors.rating = "レートを選択してください。";
     // 価格帯の必須チェック
     if (priceRange === null) newErrors.priceRange = "価格帯を選択してください。";
@@ -134,26 +147,30 @@ export function useReviewForm(initialPlace?: PlaceInfo, tagGroups: TagGroup[] = 
     setIsPending(true);
 
     try {
-      const submitData = {
-        placeId: selectedPlace?.id,
-        googlePlaceId: selectedPlace?.googlePlaceId,
-        placeSessionToken: selectedPlace?.sessionToken,
+      const result = await createReviewWithPlaceAction({
+        googlePlaceId: selectedPlace?.googlePlaceId ?? "",
+        placeSessionToken: selectedPlace?.sessionToken ?? "",
         rating: rating,
         priceRange: priceRange,
         comment: comment,
-        visitDate: visitDate,
+        visitDate: formatDateInput(visitDate),
         tagIds: selectedTags.map((t) => t.id),
-      };
-      console.log(submitData);
+      });
 
-      // 4. Server Action 実行
-      // const result = await createReviewAction(submitData);
+      if (!result.success) {
+        setErrors((currentErrors) => ({
+          ...currentErrors,
+          submit: result.error,
+        }));
+        return;
+      }
 
-      // if (result.success) {
-      //   onSuccess(); // 成功したらフォームを閉じる等の処理
-      // } else {
-      //   alert(result.error);
-      // }
+      onSuccess();
+    } catch {
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        submit: "レビューの投稿に失敗しました。",
+      }));
     } finally {
       setIsPending(false);
     }

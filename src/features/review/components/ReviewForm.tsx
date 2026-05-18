@@ -215,6 +215,11 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
           {state.isPending ? "送信中..." : "レビューを投稿する"}
         </Button>
       </div>
+      {state.errors.submit && (
+        <p className="bg-slate-50 px-4 pb-4 text-sm font-medium text-red-500">
+          {state.errors.submit}
+        </p>
+      )}
     </div>
   );
 }

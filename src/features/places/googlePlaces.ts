@@ -16,6 +16,16 @@ export type GooglePlaceSuggestion = {
   distanceMeters: number | null;
 };
 
+export type GooglePlaceDetails = {
+  placeId: string;
+  name: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  types: string[];
+  category: GooglePlacePrimaryType;
+};
+
 type GoogleAutocompleteResponse = {
   suggestions?: Array<{
     placePrediction?: {
@@ -37,8 +47,25 @@ type GoogleAutocompleteResponse = {
   }>;
 };
 
+type GooglePlaceDetailsResponse = {
+  id?: string;
+  displayName?: {
+    text?: string;
+  };
+  formattedAddress?: string;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  types?: string[];
+};
+
 function getGoogleMapsApiKey() {
   return getPublicGoogleMapsEnv().apiKey;
+}
+
+function getAllowedPlaceCategory(types: string[]): GooglePlacePrimaryType | null {
+  return GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES.find((type) => types.includes(type)) ?? null;
 }
 
 export async function fetchGooglePlaceAutocomplete({
@@ -116,4 +143,60 @@ export async function fetchGooglePlaceAutocomplete({
       };
     })
     .filter((suggestion): suggestion is GooglePlaceSuggestion => suggestion !== null);
+}
+
+export async function fetchGooglePlaceDetails({
+  placeId,
+  sessionToken,
+}: {
+  placeId: string;
+  sessionToken: string;
+}): Promise<GooglePlaceDetails> {
+  const params = new URLSearchParams({
+    languageCode: "ja",
+    regionCode: "jp",
+    sessionToken,
+  });
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?${params}`,
+    {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": getGoogleMapsApiKey(),
+        "X-Goog-FieldMask": "id,displayName,formattedAddress,location,types",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load Google place details.");
+  }
+
+  const data = (await response.json()) as GooglePlaceDetailsResponse;
+  const resolvedPlaceId = data.id;
+  const name = data.displayName?.text;
+  const lat = data.location?.latitude;
+  const lng = data.location?.longitude;
+  const types = data.types ?? [];
+  const category = getAllowedPlaceCategory(types);
+
+  if (!resolvedPlaceId || !name || typeof lat !== "number" || typeof lng !== "number") {
+    throw new Error("Google place details response is missing required fields.");
+  }
+
+  if (!category) {
+    throw new Error("Selected Google place is not an allowed food or drink place.");
+  }
+
+  return {
+    placeId: resolvedPlaceId,
+    name,
+    address: data.formattedAddress ?? null,
+    lat,
+    lng,
+    types,
+    category,
+  };
 }
