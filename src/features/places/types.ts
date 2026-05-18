@@ -1,3 +1,5 @@
+import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+
 export type Place = {
   id: string;
   googlePlaceId: string;
@@ -6,6 +8,7 @@ export type Place = {
   lat: number;
   lng: number;
   imageUrl: string | null;
+  photoAttributions: GooglePlacePhotoAttribution[];
   isGochimeshi: boolean;
   avgRating: number;
   reviewCount: number;

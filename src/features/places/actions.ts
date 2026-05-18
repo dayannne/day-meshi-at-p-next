@@ -1,6 +1,8 @@
 "use server";
 
 import type { Place } from "@/features/places/types";
+import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/server";
 
 const PLACES_SELECT_COLUMNS = `
@@ -11,6 +13,7 @@ const PLACES_SELECT_COLUMNS = `
   lat,
   lng,
   image_url,
+  photo_attributions,
   is_gochimeshi,
   avg_rating,
   review_count,
@@ -44,6 +47,31 @@ function normalizePositiveInteger(value: number | undefined, fallback: number): 
   return Number.isInteger(value) && value && value > 0 ? value : fallback;
 }
 
+function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((attribution): GooglePlacePhotoAttribution | null => {
+      if (
+        !attribution ||
+        typeof attribution !== "object" ||
+        Array.isArray(attribution) ||
+        typeof attribution.displayName !== "string"
+      ) {
+        return null;
+      }
+
+      return {
+        displayName: attribution.displayName,
+        uri: typeof attribution.uri === "string" ? attribution.uri : null,
+        photoUri: typeof attribution.photoUri === "string" ? attribution.photoUri : null,
+      };
+    })
+    .filter((attribution): attribution is GooglePlacePhotoAttribution => attribution !== null);
+}
+
 function toPlace(place: {
   id: string;
   google_place_id: string;
@@ -52,6 +80,7 @@ function toPlace(place: {
   lat: number;
   lng: number;
   image_url: string | null;
+  photo_attributions: Json;
   is_gochimeshi: boolean;
   avg_rating: number;
   review_count: number;
@@ -66,6 +95,7 @@ function toPlace(place: {
     lat: place.lat,
     lng: place.lng,
     imageUrl: place.image_url,
+    photoAttributions: toPhotoAttributions(place.photo_attributions),
     isGochimeshi: place.is_gochimeshi,
     avgRating: place.avg_rating,
     reviewCount: place.review_count,
