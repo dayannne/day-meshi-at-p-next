@@ -1,6 +1,9 @@
+import { requireActiveUser } from "@/features/auth/access";
 import { fetchGooglePlaceAutocomplete } from "@/features/places/googlePlaces";
 
 export async function POST(request: Request) {
+  await requireActiveUser();
+
   const body = (await request.json().catch(() => null)) as {
     input?: unknown;
     sessionToken?: unknown;
