@@ -34,14 +34,6 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 
 export function ReviewForm({ place, onClose }: ReviewFormProps) {
   const { state, handlers } = useReviewForm(place);
-  console.log(state.groupedTags);
-
-  //送信実行
-  const handleSubmit = () => {
-    if (!handlers.validate()) return;
-    console.log("送信成功！", state);
-  };
-
   const isNewShop = !place;
 
   return (
@@ -156,9 +148,10 @@ export function ReviewForm({ place, onClose }: ReviewFormProps) {
         </Button>
         <Button
           className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
-          onClick={handleSubmit}
+          disabled={state.isPending}
+          onClick={() => handlers.onSubmit(onClose)}
         >
-          レビューを投稿する
+          {state.isPending ? "送信中..." : "レビューを投稿する"}
         </Button>
       </div>
     </div>

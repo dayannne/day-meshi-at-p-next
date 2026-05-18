@@ -17,6 +17,7 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const { selectedTags, handleTagToggle } = useTagSelection();
+  const [isPending, setIsPending] = useState(false);
 
   const groupedTags = dummyCategories.map((cat) => ({
     category: cat,
@@ -34,6 +35,35 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
     return Object.keys(newErrors).length === 0;
   };
 
+  const onSubmit = async (onSuccess: () => void) => {
+    if (!validate()) return;
+
+    setIsPending(true);
+
+    try {
+      const submitData = {
+        placeId: selectedPlace?.id,
+        rating: rating,
+        priceRange: priceRange,
+        comment: comment,
+        visitDate: visitDate,
+        tagIds: selectedTags.map((t) => t.id),
+      };
+      console.log(submitData);
+
+      // 4. Server Action 実行
+      // const result = await createReviewAction(submitData);
+
+      // if (result.success) {
+      //   onSuccess(); // 成功したらフォームを閉じる等の処理
+      // } else {
+      //   alert(result.error);
+      // }
+    } finally {
+      setIsPending(false);
+    }
+  };
+
   return {
     state: {
       selectedPlace,
@@ -44,6 +74,7 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
       selectedTags,
       priceRange,
       groupedTags,
+      isPending,
     },
     handlers: {
       setRating,
@@ -53,6 +84,7 @@ export function useReviewForm(initialPlace?: PlaceInfo) {
       handleTagToggle,
       setPriceRange,
       validate,
+      onSubmit,
     },
   };
 }
