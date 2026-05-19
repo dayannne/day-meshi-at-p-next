@@ -147,3 +147,24 @@ export async function getPlacesAction({
     },
   };
 }
+
+export async function getPlaceAction(placeId: string): Promise<Place | null> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("places")
+    .select(PLACES_SELECT_COLUMNS)
+    .eq("id", normalizedPlaceId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Failed to load place.");
+  }
+
+  return data ? toPlace(data) : null;
+}

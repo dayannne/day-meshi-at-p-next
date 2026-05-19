@@ -3,10 +3,10 @@ import { Plus } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
-import { getPlacesAction } from "@/features/places/actions";
+import { getPlaceAction, getPlacesAction } from "@/features/places/actions";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
-import { toPlaceMarkers } from "@/features/places/placeMarkers";
+import { toPlaceMarker, toPlaceMarkers } from "@/features/places/placeMarkers";
 import { getTagGroupsAction } from "@/features/tag/actions";
 
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
@@ -47,11 +47,23 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     pageSize: PLACES_PAGE_SIZE,
   });
   const tagGroupsPromise = isNewPlaceReviewPanel ? getTagGroupsAction() : Promise.resolve(null);
-  const [{ places, pagination }, tagGroups] = await Promise.all([
+  const selectedPlacePromise =
+    isPlaceDetailPanel && selectedPlaceId ? getPlaceAction(selectedPlaceId) : Promise.resolve(null);
+  const [{ places, pagination }, tagGroups, selectedPlaceResult] = await Promise.all([
     placesResultPromise,
     tagGroupsPromise,
+    selectedPlacePromise,
   ]);
-  const markers = toPlaceMarkers(places);
+  const selectedPlace =
+    selectedPlaceId != null
+      ? (places.find((place) => place.id === selectedPlaceId) ?? selectedPlaceResult)
+      : null;
+  const placeMarkers = toPlaceMarkers(places);
+  const markers =
+    selectedPlace && !places.some((place) => place.id === selectedPlace.id)
+      ? [...placeMarkers, toPlaceMarker(selectedPlace)]
+      : placeMarkers;
+  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : undefined;
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({
     page: pagination.page,
@@ -70,7 +82,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
-      <MapMarkersSync source="places" markers={markers} />
+      <MapMarkersSync source="places" markers={markers} selectedMarkerId={selectedMarkerId} />
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-slate-950">お店を検索</h2>
         <Button asChild size="sm" className="gap-2">
@@ -94,7 +106,13 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       {isNewPlaceReviewPanel && tagGroups ? (
         <NewPlaceReviewPanel tagGroups={tagGroups} closeHref={closePanelHref} />
       ) : null}
-      {isPlaceDetailPanel ? <PlaceDetailPanel closeHref={closePanelHref} /> : null}
+      {isPlaceDetailPanel ? (
+        <PlaceDetailPanel
+          closeHref={closePanelHref}
+          place={selectedPlace}
+          requestedPlaceId={selectedPlaceId}
+        />
+      ) : null}
     </div>
   );
 }
