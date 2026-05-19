@@ -22,6 +22,7 @@ export type GoogleMapMarkerItem = {
   id: string;
   position: GoogleMapPosition;
   title?: string;
+  href?: string;
   variant?: GoogleMapMarkerVariant;
   clickable?: boolean;
   zIndex?: number;

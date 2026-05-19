@@ -58,27 +58,32 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     selectedPlaceId != null
       ? (places.find((place) => place.id === selectedPlaceId) ?? selectedPlaceResult)
       : null;
-  const placeMarkers = toPlaceMarkers(places);
-  const markers =
-    selectedPlace && !places.some((place) => place.id === selectedPlace.id)
-      ? [...placeMarkers, toPlaceMarker(selectedPlace)]
-      : placeMarkers;
-  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : undefined;
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
+  const buildPlaceDetailHref = (placeId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: PLACE_DETAIL_PANEL,
+      placeId,
+    });
   const placeDetailHrefs = Object.fromEntries(
-    places.map((place) => [
-      place.id,
-      buildPlacesHref({
-        page: pagination.page,
-        panel: PLACE_DETAIL_PANEL,
-        placeId: place.id,
-      }),
-    ])
+    places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
+  const placeMarkers = toPlaceMarkers(places).map((marker) => ({
+    ...marker,
+    href: placeDetailHrefs[marker.id],
+  }));
+  const markers =
+    selectedPlace && !places.some((place) => place.id === selectedPlace.id)
+      ? [
+          ...placeMarkers,
+          { ...toPlaceMarker(selectedPlace), href: buildPlaceDetailHref(selectedPlace.id) },
+        ]
+      : placeMarkers;
+  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : undefined;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
