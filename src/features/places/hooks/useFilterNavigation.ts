@@ -2,6 +2,24 @@ import { useEffect, useState } from "react";
 import { Tag, TagGroup } from "@/features/tag/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getTagGroupsAction } from "@/features/tag/actions";
+import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
+const GOOGLE_PLACE_CATEGORIES = {
+  CAFE: "カフェ",
+  SUSHI: "寿司",
+  RAMEN: "ラーメン",
+  CHINESE: "中華",
+  CURRY: "カレー",
+  IZAKAYA: "居酒屋",
+  SWEETS: "スイーツ",
+  BAR: "バー",
+  JAPANESE: "和食",
+  YAKINIKU: "焼肉",
+  WESTERN: "洋食",
+  FAST_FOOD: "ファストフード",
+  ASIAN: "アジア",
+  OTHERS: "その他",
+};
+type GooglePlaceCategoryKey = keyof typeof GOOGLE_PLACE_CATEGORIES;
 
 export const useFilterNavigation = () => {
   const router = useRouter();
@@ -12,7 +30,7 @@ export const useFilterNavigation = () => {
   const price = searchParams.get("price") ? Number(searchParams.get("price")) : null;
   const isGochimeshi = searchParams.get("gotimeshi") === "true";
   const selectedTagIds = searchParams.getAll("tags");
-  const category = searchParams.get("category") || null;
+  const selectedCategories = searchParams.getAll("category") as GooglePlaceCategoryKey[];
   const [tagGroups, setTagGroups] = useState<TagGroup[]>([]);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
 
@@ -46,13 +64,22 @@ export const useFilterNavigation = () => {
     updateURL(params);
   };
 
-  const setCategory = (newCategory: string | null) => {
+  const toggleCategorySelection = (categoryKey: GooglePlaceCategoryKey) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (newCategory) {
-      params.set("category", newCategory);
+
+    // 現在選択されているカテゴリーをすべて取得
+    const currentCategories = params.getAll("category");
+
+    if (currentCategories.includes(categoryKey)) {
+      // 既に選択されている場合は、URLパラメータから削除
+      const updated = currentCategories.filter((c) => c !== categoryKey);
+      params.delete("category"); // 一旦全削除してから
+      updated.forEach((c) => params.append("category", c)); // 残りを再追加
     } else {
-      params.delete("category");
+      // 選択されていない場合は、URLパラメータに追加（append）
+      params.append("category", categoryKey);
     }
+
     updateURL(params);
   };
 
@@ -93,13 +120,13 @@ export const useFilterNavigation = () => {
     price,
     isGochimeshi,
     selectedTagIds,
-    category,
+    selectedCategories,
     tagGroups, // 💡 カテゴリ一覧の描画用に使う
     selectedTags, // 💡 選択中のバッジ（名前・絵文字付き）の描画用に使う
     isTagsLoading,
     setRating,
     setPrice,
-    setCategory,
+    toggleCategorySelection,
     toggleGochimeshi,
     toggleTagSelection,
   };

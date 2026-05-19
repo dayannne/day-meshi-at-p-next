@@ -1,13 +1,6 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-
 import { MapMarkersSync } from "@/components/google-maps";
-import { Button } from "@/components/ui/Button";
 import { getPlacesAction } from "@/features/places/actions";
-import { PlacesList } from "@/features/places/components/PlacesList";
-import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-
 import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
@@ -18,8 +11,6 @@ import {
   PLACE_DETAIL_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -43,11 +34,6 @@ function parsePageParam(value: SearchParamValue): number {
   const parsedPage = Number(getFirstParam(value));
 
   return Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-}
-
-function getOptionalStringParam(value: string | string[] | undefined): string | undefined {
-  if (!value) return undefined;
-  return Array.isArray(value) ? value[0] : value;
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {

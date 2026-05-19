@@ -62,21 +62,21 @@ export function ExploreLeftPanel({
   const {
     rating,
     price,
-    category,
+    selectedCategories,
     isGochimeshi,
     selectedTags,
     setRating,
     setPrice,
-    setCategory,
+    toggleCategorySelection,
     toggleGochimeshi,
     toggleTagSelection,
   } = useFilterNavigation();
 
   // 現在の価格帯とカテゴリーのラベルを取得
   const currentPriceLevel = PRICE_LEVELS.find((level) => level.value === price);
-  const currentCategoryLabel = category
-    ? GOOGLE_PLACE_CATEGORIES[category as keyof typeof GOOGLE_PLACE_CATEGORIES]
-    : null;
+  // 表示判定用のフラグ（カテゴリー配列に中身があるかチェック）
+  const hasActiveFilters =
+    price !== null || rating > 0 || selectedCategories.length > 0 || selectedTags.length > 0;
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-white">
@@ -105,18 +105,20 @@ export function ExploreLeftPanel({
       </div>
 
       {/* フィルターヘッダー */}
-      <div className="flex flex-row items-center justify-between border-b border-slate-200 bg-white p-4">
+      <div
+        onClick={() => setActiveView(activeView === "list" ? "filter" : "list")}
+        className="flex cursor-pointer flex-row items-center justify-between border-b border-slate-200 bg-white p-4 transition-colors duration-150 select-none hover:bg-slate-50"
+      >
+        {/* 左側：アイコンと「フィルター」の文言 */}
         <div className="flex flex-row items-center gap-3">
           <SlidersHorizontal className="text-primary h-5 w-5" />
           <span className="text-sm font-bold text-slate-950">フィルター</span>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => setActiveView(activeView === "list" ? "filter" : "list")}
-          className="flex h-auto w-16 shrink-0 items-center justify-end p-0 text-sm font-medium text-slate-500 hover:bg-transparent hover:text-slate-800"
-        >
+
+        {/* 右側：ボタンタグを廃止し、クリック領域を邪魔しないテキスト（span）に変更 */}
+        <span className="flex h-auto w-16 shrink-0 items-center justify-end p-0 text-sm font-medium text-slate-500">
           {activeView === "list" ? "開く" : "閉じる"}
-        </Button>
+        </span>
       </div>
 
       {/* 選択中のフィルター表示エリア */}
@@ -135,29 +137,30 @@ export function ExploreLeftPanel({
         </div>
 
         {/* 動的バッジ表示エリア */}
-        {(price !== null || rating > 0 || category !== null || selectedTags.length > 0) && (
+        {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 pt-1">
             {/* 1. 価格帯 */}
             {price !== null && currentPriceLevel && (
-              <TagButton
-                onClick={() => setPrice(null)}
-                className="cursor-pointer border-slate-200 bg-slate-100 text-slate-700"
-              >
+              <TagButton onClick={() => setPrice(null)} tagColor={"neutral"}>
                 <span>{currentPriceLevel.label}</span>
-                <span className="ml-1 font-bold text-slate-400 hover:text-slate-600">×</span>
+                <span className="text-neutral ml-1 font-bold">×</span>
               </TagButton>
             )}
 
             {/* 2. カテゴリー */}
-            {category !== null && currentCategoryLabel && (
-              <TagButton
-                onClick={() => setCategory(null)}
-                className="cursor-pointer border-slate-200 bg-slate-100 text-slate-700"
-              >
-                <span>{currentCategoryLabel}</span>
-                <span className="ml-1 font-bold text-slate-400 hover:text-slate-600">×</span>
-              </TagButton>
-            )}
+            {selectedCategories.map((catKey) => {
+              const label = GOOGLE_PLACE_CATEGORIES[catKey];
+              return (
+                <TagButton
+                  key={catKey}
+                  tagColor={"primary"}
+                  onClick={() => toggleCategorySelection(catKey)}
+                >
+                  <span>{label}</span>
+                  <span className="ml-1 font-bold text-slate-400 hover:text-slate-600">×</span>
+                </TagButton>
+              );
+            })}
 
             {/* 3. 星評価（レート） */}
             {rating > 0 && (
@@ -173,14 +176,10 @@ export function ExploreLeftPanel({
 
             {/* 4. タグ */}
             {selectedTags.map((tag) => (
-              <TagButton
-                key={tag.id}
-                onClick={() => toggleTagSelection(tag)}
-                className="cursor-pointer border-orange-200 bg-orange-50 text-orange-700"
-              >
+              <TagButton key={tag.id} tagColor={"neutral"} onClick={() => toggleTagSelection(tag)}>
                 {tag.emoji && <span className="mr-0.5">{tag.emoji}</span>}
                 <span>{tag.name}</span>
-                <span className="ml-1 font-bold text-orange-400 hover:text-orange-600">×</span>
+                <span className="text-primary ml-1 font-bold">×</span>
               </TagButton>
             ))}
           </div>
