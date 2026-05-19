@@ -3,13 +3,7 @@ import { Plus } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
-import {
-  getPlaceAction,
-  getPlaceGoogleBusinessDetailsAction,
-  getPlacePopularReviewTagsAction,
-  getPlaceReviewPreviewsAction,
-  getPlacesAction,
-} from "@/features/places/actions";
+import { getPlaceDetailDataAction, getPlacesAction } from "@/features/places/actions";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { toPlaceMarker, toPlaceMarkers } from "@/features/places/placeMarkers";
@@ -53,38 +47,18 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     pageSize: PLACES_PAGE_SIZE,
   });
   const tagGroupsPromise = isNewPlaceReviewPanel ? getTagGroupsAction() : Promise.resolve(null);
-  const selectedPlacePromise =
-    isPlaceDetailPanel && selectedPlaceId ? getPlaceAction(selectedPlaceId) : Promise.resolve(null);
-  const popularReviewTagsPromise =
+  const placeDetailDataPromise =
     isPlaceDetailPanel && selectedPlaceId
-      ? getPlacePopularReviewTagsAction(selectedPlaceId)
-      : Promise.resolve([]);
-  const reviewPreviewsPromise =
-    isPlaceDetailPanel && selectedPlaceId
-      ? getPlaceReviewPreviewsAction(selectedPlaceId)
-      : Promise.resolve([]);
-  const googleBusinessDetailsPromise =
-    isPlaceDetailPanel && selectedPlaceId
-      ? getPlaceGoogleBusinessDetailsAction(selectedPlaceId)
+      ? getPlaceDetailDataAction(selectedPlaceId)
       : Promise.resolve(null);
-  const [
-    { places, pagination },
-    tagGroups,
-    selectedPlaceResult,
-    popularReviewTags,
-    reviewPreviews,
-    googleBusinessDetails,
-  ] = await Promise.all([
+  const [{ places, pagination }, tagGroups, placeDetailData] = await Promise.all([
     placesResultPromise,
     tagGroupsPromise,
-    selectedPlacePromise,
-    popularReviewTagsPromise,
-    reviewPreviewsPromise,
-    googleBusinessDetailsPromise,
+    placeDetailDataPromise,
   ]);
   const selectedPlace =
     selectedPlaceId != null
-      ? (places.find((place) => place.id === selectedPlaceId) ?? selectedPlaceResult)
+      ? (places.find((place) => place.id === selectedPlaceId) ?? placeDetailData?.place ?? null)
       : null;
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({
@@ -143,9 +117,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         <PlaceDetailPanel
           closeHref={closePanelHref}
           place={selectedPlace}
-          popularReviewTags={popularReviewTags}
-          reviewPreviews={reviewPreviews}
-          googleBusinessDetails={googleBusinessDetails}
+          popularReviewTags={placeDetailData?.popularReviewTags ?? []}
+          reviewPreviews={placeDetailData?.reviewPreviews ?? []}
+          googleBusinessDetails={placeDetailData?.googleBusinessDetails ?? null}
           requestedPlaceId={selectedPlaceId}
         />
       ) : null}

@@ -8,6 +8,7 @@ import { getServerGoogleMapsEnv } from "@/lib/google-maps/env";
 export const GOOGLE_PLACES_SEARCH_CENTER = DEFAULT_GOOGLE_MAP_CENTER;
 export const GOOGLE_PLACES_SEARCH_RADIUS_METERS = 2000;
 export const GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES = ["restaurant", "bar", "cafe"] as const;
+const GOOGLE_PLACE_BUSINESS_DETAILS_REVALIDATE_SECONDS = 15 * 60;
 
 export const GOOGLE_PLACE_CATEGORIES = {
   CAFE: "カフェ",
@@ -828,11 +829,14 @@ export async function fetchGooglePlaceBusinessDetails(googlePlaceId: string) {
     languageCode: "ja",
     regionCode: "jp",
   });
+
   const response = await fetch(
     `https://places.googleapis.com/v1/places/${encodeURIComponent(normalizedGooglePlaceId)}?${params}`,
     {
       method: "GET",
-      cache: "no-store",
+      next: {
+        revalidate: GOOGLE_PLACE_BUSINESS_DETAILS_REVALIDATE_SECONDS,
+      },
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": getGoogleMapsApiKey(),
