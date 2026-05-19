@@ -8,8 +8,8 @@ interface CategorizedTagsProps {
   categoryName: string;
   tags: Tag[];
   variant?: "primary" | "secondary" | "tertiary" | "neutral";
-  selectedTags?: Tag[];
-  onTagToggle?: (tagName: Tag) => void;
+  selectedTags?: Tag[] | string[];
+  onTagToggle?: (tagName: Tag | string) => void;
 }
 
 export const CategorizedTags = ({
@@ -35,7 +35,12 @@ export const CategorizedTags = ({
       {/* タグ一覧レイアウト */}
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => {
-          const isSelected = selectedTags.some((t) => t.id === tag.id);
+          const isSelected = selectedTags.some((t) => {
+            if (typeof t === "string") {
+              return t === tag.id;
+            }
+            return t?.id === tag.id;
+          });
 
           // TagButton を使用
           return (
