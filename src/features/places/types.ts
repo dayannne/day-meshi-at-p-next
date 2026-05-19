@@ -31,3 +31,19 @@ export type PlaceReviewPreview = {
   comment: string;
   date: string;
 };
+
+export type PlaceGoogleBusinessStatus =
+  | "BUSINESS_STATUS_UNSPECIFIED"
+  | "OPERATIONAL"
+  | "CLOSED_TEMPORARILY"
+  | "CLOSED_PERMANENTLY"
+  | "FUTURE_OPENING";
+
+export type PlaceGoogleBusinessDetails = {
+  address: string | null;
+  phoneNumber: string | null;
+  businessStatus: PlaceGoogleBusinessStatus | null;
+  openNow: boolean | null;
+  todayOpeningHours: string | null;
+  googleMapsUri: string | null;
+};

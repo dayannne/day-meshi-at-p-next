@@ -1,7 +1,15 @@
 "use server";
 
-import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
-import type { Place, PlacePopularReviewTag, PlaceReviewPreview } from "@/features/places/types";
+import {
+  fetchGooglePlaceBusinessDetails,
+  type GooglePlacePhotoAttribution,
+} from "@/features/places/googlePlaces";
+import type {
+  Place,
+  PlaceGoogleBusinessDetails,
+  PlacePopularReviewTag,
+  PlaceReviewPreview,
+} from "@/features/places/types";
 import { requireActiveUser } from "@/features/auth/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
@@ -333,4 +341,35 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
     comment: review.comment?.trim() || "コメントなし",
     date: review.created_at,
   }));
+}
+
+export async function getPlaceGoogleBusinessDetailsAction(
+  placeId: string
+): Promise<PlaceGoogleBusinessDetails | null> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data: place, error } = await supabase
+    .from("places")
+    .select("google_place_id")
+    .eq("id", normalizedPlaceId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Failed to load place Google Place ID.");
+  }
+
+  if (!place?.google_place_id) {
+    return null;
+  }
+
+  try {
+    return await fetchGooglePlaceBusinessDetails(place.google_place_id);
+  } catch {
+    return null;
+  }
 }

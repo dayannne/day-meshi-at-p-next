@@ -1,13 +1,19 @@
 import { Button } from "@/components/ui/Button";
 import { Tag } from "@/components/ui/Tag";
 import { ReviewCard } from "@/features/review/components/ReviewCard";
-import type { Place, PlacePopularReviewTag, PlaceReviewPreview } from "@/features/places/types";
+import type {
+  Place,
+  PlaceGoogleBusinessDetails,
+  PlacePopularReviewTag,
+  PlaceReviewPreview,
+} from "@/features/places/types";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 
 type PlaceDetailPanelProps = {
   closeHref: string;
   place: Place | null;
+  googleBusinessDetails: PlaceGoogleBusinessDetails | null;
   popularReviewTags: PlacePopularReviewTag[];
   reviewPreviews: PlaceReviewPreview[];
   requestedPlaceId?: string;
@@ -59,9 +65,70 @@ function PhotoAttributions({ place }: { place: Place }) {
   );
 }
 
+function getBusinessStatusLabel(details: PlaceGoogleBusinessDetails): string {
+  switch (details.businessStatus) {
+    case "CLOSED_TEMPORARILY":
+      return "臨時休業";
+    case "CLOSED_PERMANENTLY":
+      return "閉業";
+    case "FUTURE_OPENING":
+      return "開業予定";
+    default:
+      if (details.openNow === true) {
+        return "営業中";
+      }
+
+      if (details.openNow === false) {
+        return "営業時間外";
+      }
+
+      return "不明";
+  }
+}
+
+function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails | null }) {
+  return (
+    <section className="border-t border-slate-200 pt-4">
+      <h5 className="text-sm font-bold text-slate-950">店舗情報</h5>
+      {details ? (
+        <div className="mt-3 space-y-3">
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2 text-sm text-slate-600">
+            <dt className="font-semibold text-slate-950">住所</dt>
+            <dd>{details.address ?? "-"}</dd>
+            <dt className="font-semibold text-slate-950">電話番号</dt>
+            <dd>
+              {details.phoneNumber ? (
+                <a href={`tel:${details.phoneNumber}`} className="underline underline-offset-2">
+                  {details.phoneNumber}
+                </a>
+              ) : (
+                "-"
+              )}
+            </dd>
+            <dt className="font-semibold text-slate-950">営業状態</dt>
+            <dd>{getBusinessStatusLabel(details)}</dd>
+            <dt className="font-semibold text-slate-950">今日の営業時間</dt>
+            <dd>{details.todayOpeningHours ?? "営業時間不明"}</dd>
+          </dl>
+          {details.googleMapsUri ? (
+            <Button asChild variant="outline" size="sm" className="h-9 w-full">
+              <a href={details.googleMapsUri} target="_blank" rel="noreferrer">
+                Google Mapsで開く
+              </a>
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm text-slate-500">Google Mapsの店舗情報を取得できませんでした。</p>
+      )}
+    </section>
+  );
+}
+
 export function PlaceDetailPanel({
   closeHref,
   place,
+  googleBusinessDetails,
   popularReviewTags,
   reviewPreviews,
   requestedPlaceId,
@@ -94,6 +161,8 @@ export function PlaceDetailPanel({
               </dd>
             </dl>
 
+            <BusinessInfoSection details={googleBusinessDetails} />
+
             <section className="border-t border-slate-200 pt-4">
               {popularReviewTags.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -106,7 +175,7 @@ export function PlaceDetailPanel({
                       className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal"
                     >
                       {tag.emoji ? <span>{tag.emoji}</span> : null}
-                      <span className="break-words">{tag.name}</span>
+                      <span className="wrap-break-words">{tag.name}</span>
                     </Tag>
                   ))}
                 </div>

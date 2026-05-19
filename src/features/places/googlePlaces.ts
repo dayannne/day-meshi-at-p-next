@@ -113,6 +113,41 @@ type GooglePlacePhotoResponse = {
   photoUri?: string;
 };
 
+type GooglePlaceBusinessStatus =
+  | "BUSINESS_STATUS_UNSPECIFIED"
+  | "OPERATIONAL"
+  | "CLOSED_TEMPORARILY"
+  | "CLOSED_PERMANENTLY"
+  | "FUTURE_OPENING";
+
+type GoogleOpeningHoursPoint = {
+  date?: {
+    year?: number;
+    month?: number;
+    day?: number;
+  };
+  hour?: number;
+  minute?: number;
+};
+
+type GooglePlaceBusinessDetailsResponse = {
+  formattedAddress?: string;
+  nationalPhoneNumber?: string;
+  businessStatus?: GooglePlaceBusinessStatus;
+  googleMapsUri?: string;
+  timeZone?: {
+    id?: string;
+  };
+  currentOpeningHours?: {
+    openNow?: boolean;
+    periods?: Array<{
+      open?: GoogleOpeningHoursPoint;
+      close?: GoogleOpeningHoursPoint;
+    }>;
+    weekdayDescriptions?: string[];
+  };
+};
+
 type GoogleRouteResponse = {
   routes?: Array<{
     distanceMeters?: number;
@@ -382,6 +417,102 @@ function parseDurationSeconds(duration: string | undefined): number | null {
   }
 
   return Number(match[1]);
+}
+
+function getLocalDateParts(timeZoneId: string | undefined): {
+  year: number;
+  month: number;
+  day: number;
+} | null {
+  if (!timeZoneId) {
+    return null;
+  }
+
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timeZoneId,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const year = Number(parts.find((part) => part.type === "year")?.value);
+    const month = Number(parts.find((part) => part.type === "month")?.value);
+    const day = Number(parts.find((part) => part.type === "day")?.value);
+
+    return Number.isInteger(year) && Number.isInteger(month) && Number.isInteger(day)
+      ? { year, month, day }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isSameGoogleDate(
+  date: GoogleOpeningHoursPoint["date"] | undefined,
+  target: { year: number; month: number; day: number }
+): boolean {
+  return date?.year === target.year && date.month === target.month && date.day === target.day;
+}
+
+function formatOpeningTime(point: GoogleOpeningHoursPoint | undefined): string | null {
+  if (!point || typeof point.hour !== "number" || typeof point.minute !== "number") {
+    return null;
+  }
+
+  return `${String(point.hour).padStart(2, "0")}:${String(point.minute).padStart(2, "0")}`;
+}
+
+function getTodayWeekdayDescription(
+  weekdayDescriptions: string[] | undefined,
+  timeZoneId: string | undefined
+): string | null {
+  if (!weekdayDescriptions?.length || !timeZoneId) {
+    return null;
+  }
+
+  try {
+    const weekday = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: timeZoneId,
+      weekday: "long",
+    }).format(new Date());
+    const todayDescription = weekdayDescriptions.find((description) =>
+      description.startsWith(weekday)
+    );
+
+    return todayDescription?.replace(/^[^:：]+[:：]\s*/, "") || null;
+  } catch {
+    return null;
+  }
+}
+
+function formatTodayOpeningHours(
+  currentOpeningHours: GooglePlaceBusinessDetailsResponse["currentOpeningHours"],
+  timeZoneId: string | undefined
+): string | null {
+  const today = getLocalDateParts(timeZoneId);
+
+  if (!today) {
+    return getTodayWeekdayDescription(currentOpeningHours?.weekdayDescriptions, timeZoneId);
+  }
+
+  const periodLabels = (currentOpeningHours?.periods ?? [])
+    .filter((period) => isSameGoogleDate(period.open?.date, today))
+    .map((period) => {
+      const open = formatOpeningTime(period.open);
+      const close = formatOpeningTime(period.close);
+
+      if (!open) {
+        return null;
+      }
+
+      return close ? `${open} - ${close}` : "24時間営業";
+    })
+    .filter((label): label is string => label !== null);
+
+  return (
+    periodLabels.join(" / ") ||
+    getTodayWeekdayDescription(currentOpeningHours?.weekdayDescriptions, timeZoneId)
+  );
 }
 
 function createPlaceSelectionPayload(details: GooglePlaceDetails, sessionToken: string) {
@@ -683,5 +814,62 @@ export async function fetchGooglePlaceDetails({
     photoAttributions: imageUrl ? toPhotoAttributions(photo) : [],
     distanceFromOfficeMeters: walkingRoute.distanceFromOfficeMeters,
     walkingDurationSeconds: walkingRoute.walkingDurationSeconds,
+  };
+}
+
+export async function fetchGooglePlaceBusinessDetails(googlePlaceId: string) {
+  const normalizedGooglePlaceId = googlePlaceId.trim();
+
+  if (!normalizedGooglePlaceId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    languageCode: "ja",
+    regionCode: "jp",
+  });
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(normalizedGooglePlaceId)}?${params}`,
+    {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": getGoogleMapsApiKey(),
+        "X-Goog-FieldMask": [
+          "formattedAddress",
+          "nationalPhoneNumber",
+          "businessStatus",
+          "googleMapsUri",
+          "timeZone",
+          "currentOpeningHours.openNow",
+          "currentOpeningHours.periods.open.date",
+          "currentOpeningHours.periods.open.hour",
+          "currentOpeningHours.periods.open.minute",
+          "currentOpeningHours.periods.close.date",
+          "currentOpeningHours.periods.close.hour",
+          "currentOpeningHours.periods.close.minute",
+          "currentOpeningHours.weekdayDescriptions",
+        ].join(","),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to load Google place business details.");
+  }
+
+  const data = (await response.json()) as GooglePlaceBusinessDetailsResponse;
+
+  return {
+    address: data.formattedAddress ?? null,
+    phoneNumber: data.nationalPhoneNumber ?? null,
+    businessStatus: data.businessStatus ?? null,
+    openNow:
+      typeof data.currentOpeningHours?.openNow === "boolean"
+        ? data.currentOpeningHours.openNow
+        : null,
+    todayOpeningHours: formatTodayOpeningHours(data.currentOpeningHours, data.timeZone?.id),
+    googleMapsUri: data.googleMapsUri ?? null,
   };
 }

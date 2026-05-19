@@ -5,6 +5,7 @@ import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
 import {
   getPlaceAction,
+  getPlaceGoogleBusinessDetailsAction,
   getPlacePopularReviewTagsAction,
   getPlaceReviewPreviewsAction,
   getPlacesAction,
@@ -62,18 +63,24 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     isPlaceDetailPanel && selectedPlaceId
       ? getPlaceReviewPreviewsAction(selectedPlaceId)
       : Promise.resolve([]);
+  const googleBusinessDetailsPromise =
+    isPlaceDetailPanel && selectedPlaceId
+      ? getPlaceGoogleBusinessDetailsAction(selectedPlaceId)
+      : Promise.resolve(null);
   const [
     { places, pagination },
     tagGroups,
     selectedPlaceResult,
     popularReviewTags,
     reviewPreviews,
+    googleBusinessDetails,
   ] = await Promise.all([
     placesResultPromise,
     tagGroupsPromise,
     selectedPlacePromise,
     popularReviewTagsPromise,
     reviewPreviewsPromise,
+    googleBusinessDetailsPromise,
   ]);
   const selectedPlace =
     selectedPlaceId != null
@@ -138,6 +145,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           place={selectedPlace}
           popularReviewTags={popularReviewTags}
           reviewPreviews={reviewPreviews}
+          googleBusinessDetails={googleBusinessDetails}
           requestedPlaceId={selectedPlaceId}
         />
       ) : null}
