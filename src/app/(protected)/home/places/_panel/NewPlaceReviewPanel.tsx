@@ -1,26 +1,39 @@
-"use client";
+import { Suspense } from "react";
 
-import { useRouter } from "next/navigation";
-
-import { ReviewForm } from "@/features/review/components/ReviewForm";
-import type { TagGroup } from "@/features/tag/types";
+import { getTagGroupsAction } from "@/features/tag/actions";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
+import { NewPlaceReviewPanelClient } from "./NewPlaceReviewPanelClient";
 
 type NewPlaceReviewPanelProps = {
-  tagGroups: TagGroup[];
   closeHref: string;
 };
 
-export function NewPlaceReviewPanel({ tagGroups, closeHref }: NewPlaceReviewPanelProps) {
-  const router = useRouter();
+function NewPlaceReviewPanelLoading() {
+  return (
+    <div className="h-full overflow-y-auto p-6">
+      <div className="space-y-4">
+        <div className="h-5 w-40 animate-pulse rounded bg-slate-100" />
+        <div className="h-10 w-full animate-pulse rounded bg-slate-100" />
+        <div className="h-24 w-full animate-pulse rounded bg-slate-100" />
+        <p className="text-sm text-slate-500">レビュー投稿フォームを読み込んでいます。</p>
+      </div>
+    </div>
+  );
+}
 
+async function NewPlaceReviewPanelBody({ closeHref }: NewPlaceReviewPanelProps) {
+  const tagGroups = await getTagGroupsAction();
+
+  return <NewPlaceReviewPanelClient tagGroups={tagGroups} closeHref={closeHref} />;
+}
+
+export function NewPlaceReviewPanel({ closeHref }: NewPlaceReviewPanelProps) {
   return (
     <HomePanelFrame title="レビューを投稿" closeHref={closeHref}>
-      <ReviewForm
-        tagGroups={tagGroups}
-        onClose={() => router.replace(closeHref, { scroll: false })}
-      />
+      <Suspense fallback={<NewPlaceReviewPanelLoading />}>
+        <NewPlaceReviewPanelBody closeHref={closeHref} />
+      </Suspense>
     </HomePanelFrame>
   );
 }

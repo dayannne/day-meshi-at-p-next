@@ -1,7 +1,18 @@
 "use server";
 
-import type { Place } from "@/features/places/types";
-import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import {
+  fetchGooglePlaceBusinessDetails,
+  type GooglePlacePhotoAttribution,
+} from "@/features/places/googlePlaces";
+import { getPlacePopularReviewTags } from "@/features/places/placeReviewInsights";
+import type {
+  Place,
+  PlaceGoogleBusinessDetails,
+  PlacePopularReviewTag,
+  PlaceReviewPreview,
+} from "@/features/places/types";
+import { requireActiveUser } from "@/features/auth/access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,6 +34,8 @@ const PLACES_SELECT_COLUMNS = `
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
+const POPULAR_REVIEW_TAGS_LIMIT = 4;
+const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -41,6 +54,18 @@ type PlacesPagination = {
 type GetPlacesActionResult = {
   places: Place[];
   pagination: PlacesPagination;
+};
+
+type ReviewPreviewRow = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  profiles: EmbeddedReviewPreviewProfile | EmbeddedReviewPreviewProfile[] | null;
+};
+
+type EmbeddedReviewPreviewProfile = {
+  nickname: string | null;
 };
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -102,6 +127,22 @@ function toPlace(place: {
     distanceFromOfficeMeters: place.distance_from_office_meters,
     walkingDurationSeconds: place.walking_duration_seconds,
   };
+}
+
+async function fetchNullableGoogleBusinessDetails(
+  googlePlaceId: string
+): Promise<PlaceGoogleBusinessDetails | null> {
+  try {
+    return await fetchGooglePlaceBusinessDetails(googlePlaceId);
+  } catch {
+    return null;
+  }
+}
+
+function getReviewPreviewAuthorName(row: ReviewPreviewRow): string {
+  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+
+  return profile?.nickname ?? "社員";
 }
 
 export async function getPlacesAction({
@@ -167,4 +208,88 @@ export async function getPlaceAction(placeId: string): Promise<Place | null> {
   }
 
   return data ? toPlace(data) : null;
+}
+
+export async function getPlacePopularReviewTagsAction(
+  placeId: string
+): Promise<PlacePopularReviewTag[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return [];
+  }
+
+  const supabase = await createClient();
+
+  return getPlacePopularReviewTags(supabase, normalizedPlaceId, POPULAR_REVIEW_TAGS_LIMIT);
+}
+
+export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return [];
+  }
+
+  await requireActiveUser();
+
+  const admin = createAdminClient();
+  const { data: reviews, error: reviewsError } = await admin
+    .from("reviews")
+    .select(
+      `
+        id,
+        rating,
+        comment,
+        created_at,
+        profiles!reviews_user_id_fkey (
+          nickname
+        )
+      `
+    )
+    .eq("place_id", normalizedPlaceId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(PLACE_REVIEW_PREVIEWS_LIMIT);
+
+  if (reviewsError) {
+    throw new Error("Failed to load review previews.");
+  }
+
+  const reviewRows = (reviews ?? []) as ReviewPreviewRow[];
+
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorName: getReviewPreviewAuthorName(review),
+    rating: review.rating,
+    comment: review.comment?.trim() || "コメントなし",
+    date: review.created_at,
+  }));
+}
+
+export async function getPlaceGoogleBusinessDetailsAction(
+  placeId: string
+): Promise<PlaceGoogleBusinessDetails | null> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data: place, error } = await supabase
+    .from("places")
+    .select("google_place_id")
+    .eq("id", normalizedPlaceId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Failed to load place Google Place ID.");
+  }
+
+  if (!place?.google_place_id) {
+    return null;
+  }
+
+  return fetchNullableGoogleBusinessDetails(place.google_place_id);
 }

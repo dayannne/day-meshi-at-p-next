@@ -21,7 +21,7 @@ interface ReviewCardProps {
   name: string; // ユーザーネーム
   rating: number; //レート(星)
   comment: string; //コメント
-  date: Date; //日付(created_at or visited_at)
+  date: Date | string; //日付(created_at or visited_at)
   variant: "reviewList" | "placeDetail"; //お店詳細ページかレビューリストかで見た目を変える
   onClick?: (id: string) => void;
 }
