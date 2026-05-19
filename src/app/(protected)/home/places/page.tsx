@@ -8,9 +8,15 @@ import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
 
+import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
-import { buildPlacesHref, NEW_PLACE_REVIEW_PANEL, PLACE_DETAIL_PANEL } from "./_panel/panelLinks";
+import {
+  buildPlacesHref,
+  EXISTING_PLACE_REVIEW_PANEL,
+  NEW_PLACE_REVIEW_PANEL,
+  PLACE_DETAIL_PANEL,
+} from "./_panel/panelLinks";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -41,6 +47,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const selectedPlaceId = getFirstParam(placeId);
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
+  const isExistingPlaceReviewPanel =
+    panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
@@ -56,6 +64,12 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       panel: PLACE_DETAIL_PANEL,
       placeId,
     });
+  const buildExistingPlaceReviewHref = (placeId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: EXISTING_PLACE_REVIEW_PANEL,
+      placeId,
+    });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
@@ -63,7 +77,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     ...marker,
     href: placeDetailHrefs[marker.id],
   }));
-  const selectedMarkerId = isPlaceDetailPanel ? selectedPlaceId : null;
+  const selectedMarkerId =
+    isPlaceDetailPanel || isExistingPlaceReviewPanel ? selectedPlaceId : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
@@ -94,6 +109,14 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           closeHref={closePanelHref}
           placeId={selectedPlaceId}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
+        />
+      ) : null}
+      {isExistingPlaceReviewPanel && selectedPlaceId ? (
+        <ExistingPlaceReviewPanel
+          closeHref={closePanelHref}
+          detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          placeId={selectedPlaceId}
         />
       ) : null}
     </div>

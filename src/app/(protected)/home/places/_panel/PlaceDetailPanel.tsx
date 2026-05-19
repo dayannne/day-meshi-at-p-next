@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { PencilLine } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +27,7 @@ type PlaceDetailPanelProps = {
   placeId: string;
   // 지도 마커 클릭/선택 상태와 상세 패널 URL을 맞추기 위한 href.
   detailHref: string;
+  reviewHref: string;
 };
 
 function normalizeAttributionUrl(uri: string | null) {
@@ -274,7 +277,15 @@ async function PlaceDetailExtras({
   );
 }
 
-async function PlaceDetailBody({ placeId, detailHref }: { placeId: string; detailHref: string }) {
+async function PlaceDetailBody({
+  placeId,
+  detailHref,
+  reviewHref,
+}: {
+  placeId: string;
+  detailHref: string;
+  reviewHref: string;
+}) {
   // 첫 화면에 필요한 기본 장소 데이터만 여기서 로드한다.
   const place = await getPlaceAction(placeId);
 
@@ -318,6 +329,13 @@ async function PlaceDetailBody({ placeId, detailHref }: { placeId: string; detai
             </dd>
           </dl>
 
+          <Button asChild size="sm" className="h-10 w-full gap-2">
+            <Link href={reviewHref} scroll={false}>
+              <PencilLine className="size-4" aria-hidden="true" />
+              レビューを書く
+            </Link>
+          </Button>
+
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
             <PlaceDetailExtras category={place.category} placeId={place.id} />
           </Suspense>
@@ -327,12 +345,17 @@ async function PlaceDetailBody({ placeId, detailHref }: { placeId: string; detai
   );
 }
 
-export function PlaceDetailPanel({ closeHref, placeId, detailHref }: PlaceDetailPanelProps) {
+export function PlaceDetailPanel({
+  closeHref,
+  placeId,
+  detailHref,
+  reviewHref,
+}: PlaceDetailPanelProps) {
   return (
     <HomePanelFrame title="お店詳細" closeHref={closeHref}>
       {/* 장소 전환 시 이전 상세 내용이 남지 않도록 placeId를 Suspense key로 사용한다. */}
       <Suspense key={placeId} fallback={<PlaceDetailLoading />}>
-        <PlaceDetailBody placeId={placeId} detailHref={detailHref} />
+        <PlaceDetailBody placeId={placeId} detailHref={detailHref} reviewHref={reviewHref} />
       </Suspense>
     </HomePanelFrame>
   );
