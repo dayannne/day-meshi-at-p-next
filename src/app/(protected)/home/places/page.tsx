@@ -3,11 +3,10 @@ import { Plus } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
-import { getPlaceDetailDataAction, getPlacesAction } from "@/features/places/actions";
+import { getPlacesAction } from "@/features/places/actions";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
-import { toPlaceMarker, toPlaceMarkers } from "@/features/places/placeMarkers";
-import { getTagGroupsAction } from "@/features/tag/actions";
+import { toPlaceMarkers } from "@/features/places/placeMarkers";
 
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
@@ -42,24 +41,10 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const selectedPlaceId = getFirstParam(placeId);
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
-  const placesResultPromise = getPlacesAction({
+  const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
   });
-  const tagGroupsPromise = isNewPlaceReviewPanel ? getTagGroupsAction() : Promise.resolve(null);
-  const placeDetailDataPromise =
-    isPlaceDetailPanel && selectedPlaceId
-      ? getPlaceDetailDataAction(selectedPlaceId)
-      : Promise.resolve(null);
-  const [{ places, pagination }, tagGroups, placeDetailData] = await Promise.all([
-    placesResultPromise,
-    tagGroupsPromise,
-    placeDetailDataPromise,
-  ]);
-  const selectedPlace =
-    selectedPlaceId != null
-      ? (places.find((place) => place.id === selectedPlaceId) ?? placeDetailData?.place ?? null)
-      : null;
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({
     page: pagination.page,
@@ -78,18 +63,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     ...marker,
     href: placeDetailHrefs[marker.id],
   }));
-  const markers =
-    selectedPlace && !places.some((place) => place.id === selectedPlace.id)
-      ? [
-          ...placeMarkers,
-          { ...toPlaceMarker(selectedPlace), href: buildPlaceDetailHref(selectedPlace.id) },
-        ]
-      : placeMarkers;
-  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : null;
+  const selectedMarkerId = isPlaceDetailPanel ? selectedPlaceId : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
-      <MapMarkersSync source="places" markers={markers} selectedMarkerId={selectedMarkerId} />
+      <MapMarkersSync source="places" markers={placeMarkers} selectedMarkerId={selectedMarkerId} />
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-slate-950">お店を検索</h2>
         <Button asChild size="sm" className="gap-2">
@@ -110,17 +88,12 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         hasPreviousPage={pagination.hasPreviousPage}
         hasNextPage={pagination.hasNextPage}
       />
-      {isNewPlaceReviewPanel && tagGroups ? (
-        <NewPlaceReviewPanel tagGroups={tagGroups} closeHref={closePanelHref} />
-      ) : null}
-      {isPlaceDetailPanel ? (
+      {isNewPlaceReviewPanel ? <NewPlaceReviewPanel closeHref={closePanelHref} /> : null}
+      {isPlaceDetailPanel && selectedPlaceId ? (
         <PlaceDetailPanel
           closeHref={closePanelHref}
-          place={selectedPlace}
-          popularReviewTags={placeDetailData?.popularReviewTags ?? []}
-          reviewPreviews={placeDetailData?.reviewPreviews ?? []}
-          googleBusinessDetails={placeDetailData?.googleBusinessDetails ?? null}
-          requestedPlaceId={selectedPlaceId}
+          placeId={selectedPlaceId}
+          detailHref={buildPlaceDetailHref(selectedPlaceId)}
         />
       ) : null}
     </div>

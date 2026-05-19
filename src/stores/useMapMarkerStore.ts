@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 import type { GoogleMapMarkerItem } from "@/components/google-maps/types";
 
-export type MapMarkerSource = "places" | "bookmarks" | "review-place";
+export type MapMarkerSource = "places" | "place-detail" | "bookmarks" | "review-place";
 type MapMarkerLayers = Partial<Record<MapMarkerSource, GoogleMapMarkerItem[]>>;
 
 export type MapMarkerStore = {
@@ -16,10 +16,23 @@ export type MapMarkerStore = {
   selectMarker: (markerId: string | null) => void;
 };
 
-const MARKER_SOURCE_ORDER: MapMarkerSource[] = ["places", "bookmarks", "review-place"];
+const MARKER_SOURCE_ORDER: MapMarkerSource[] = [
+  "places",
+  "place-detail",
+  "bookmarks",
+  "review-place",
+];
 
 function mergeLayers(markerLayers: MapMarkerLayers): GoogleMapMarkerItem[] {
-  return MARKER_SOURCE_ORDER.flatMap((source) => markerLayers[source] ?? []);
+  const markersById = new Map<string, GoogleMapMarkerItem>();
+
+  for (const source of MARKER_SOURCE_ORDER) {
+    for (const marker of markerLayers[source] ?? []) {
+      markersById.set(marker.id, marker);
+    }
+  }
+
+  return Array.from(markersById.values());
 }
 
 function keepSelection(markers: GoogleMapMarkerItem[], selectedMarkerId: string | null) {

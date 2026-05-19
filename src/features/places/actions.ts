@@ -7,7 +7,6 @@ import {
 import { getPlacePopularReviewTags } from "@/features/places/placeReviewInsights";
 import type {
   Place,
-  PlaceDetailData,
   PlaceGoogleBusinessDetails,
   PlacePopularReviewTag,
   PlaceReviewPreview,
@@ -55,13 +54,6 @@ type PlacesPagination = {
 type GetPlacesActionResult = {
   places: Place[];
   pagination: PlacesPagination;
-};
-
-const EMPTY_PLACE_DETAIL_DATA: PlaceDetailData = {
-  place: null,
-  popularReviewTags: [],
-  reviewPreviews: [],
-  googleBusinessDetails: null,
 };
 
 type ReviewPreviewRow = {
@@ -216,43 +208,6 @@ export async function getPlaceAction(placeId: string): Promise<Place | null> {
   }
 
   return data ? toPlace(data) : null;
-}
-
-export async function getPlaceDetailDataAction(placeId: string): Promise<PlaceDetailData> {
-  const normalizedPlaceId = placeId.trim();
-
-  if (!normalizedPlaceId) {
-    return EMPTY_PLACE_DETAIL_DATA;
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("places")
-    .select(PLACES_SELECT_COLUMNS)
-    .eq("id", normalizedPlaceId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error("Failed to load place detail data.");
-  }
-
-  if (!data) {
-    return EMPTY_PLACE_DETAIL_DATA;
-  }
-
-  const place = toPlace(data);
-  const [popularReviewTags, reviewPreviews, googleBusinessDetails] = await Promise.all([
-    getPlacePopularReviewTagsAction(place.id),
-    getPlaceReviewPreviewsAction(place.id),
-    fetchNullableGoogleBusinessDetails(place.googlePlaceId),
-  ]);
-
-  return {
-    place,
-    popularReviewTags,
-    reviewPreviews,
-    googleBusinessDetails,
-  };
 }
 
 export async function getPlacePopularReviewTagsAction(

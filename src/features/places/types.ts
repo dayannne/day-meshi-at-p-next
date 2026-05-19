@@ -47,10 +47,3 @@ export type PlaceGoogleBusinessDetails = {
   todayOpeningHours: string | null;
   googleMapsUri: string | null;
 };
-
-export type PlaceDetailData = {
-  place: Place | null;
-  popularReviewTags: PlacePopularReviewTag[];
-  reviewPreviews: PlaceReviewPreview[];
-  googleBusinessDetails: PlaceGoogleBusinessDetails | null;
-};
