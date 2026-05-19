@@ -1,7 +1,7 @@
 "use server";
 
-import type { Place } from "@/features/places/types";
 import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import type { Place, PlacePopularReviewTag } from "@/features/places/types";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,6 +23,8 @@ const PLACES_SELECT_COLUMNS = `
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
+const POPULAR_REVIEW_TAGS_LIMIT = 4;
+const REVIEW_TAGS_PAGE_SIZE = 1000;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -41,6 +43,17 @@ type PlacesPagination = {
 type GetPlacesActionResult = {
   places: Place[];
   pagination: PlacesPagination;
+};
+
+type EmbeddedReviewTagTag = {
+  id: string;
+  name: string;
+  emoji: string | null;
+  category_id: string;
+};
+
+type ReviewTagWithTag = {
+  tags: EmbeddedReviewTagTag | EmbeddedReviewTagTag[] | null;
 };
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -102,6 +115,14 @@ function toPlace(place: {
     distanceFromOfficeMeters: place.distance_from_office_meters,
     walkingDurationSeconds: place.walking_duration_seconds,
   };
+}
+
+function getEmbeddedReviewTagTag(row: ReviewTagWithTag): EmbeddedReviewTagTag | null {
+  if (Array.isArray(row.tags)) {
+    return row.tags[0] ?? null;
+  }
+
+  return row.tags;
 }
 
 export async function getPlacesAction({
@@ -167,4 +188,87 @@ export async function getPlaceAction(placeId: string): Promise<Place | null> {
   }
 
   return data ? toPlace(data) : null;
+}
+
+export async function getPlacePopularReviewTagsAction(
+  placeId: string
+): Promise<PlacePopularReviewTag[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const tagsById = new Map<string, PlacePopularReviewTag>();
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("review_tags")
+      .select(
+        `
+          tags!inner (
+            id,
+            name,
+            emoji,
+            category_id
+          ),
+          reviews!inner (
+            place_id
+          )
+        `
+      )
+      .eq("reviews.place_id", normalizedPlaceId)
+      .order("review_id", { ascending: true })
+      .order("tag_id", { ascending: true })
+      .range(from, from + REVIEW_TAGS_PAGE_SIZE - 1);
+
+    if (error) {
+      throw new Error("Failed to load popular review tags.");
+    }
+
+    const rows = (data ?? []) as ReviewTagWithTag[];
+
+    for (const row of rows) {
+      const tag = getEmbeddedReviewTagTag(row);
+
+      if (!tag) {
+        continue;
+      }
+
+      const currentTag = tagsById.get(tag.id);
+
+      if (currentTag) {
+        currentTag.reviewCount += 1;
+        continue;
+      }
+
+      tagsById.set(tag.id, {
+        id: tag.id,
+        name: tag.name,
+        emoji: tag.emoji,
+        categoryId: tag.category_id,
+        reviewCount: 1,
+      });
+    }
+
+    if (rows.length < REVIEW_TAGS_PAGE_SIZE) {
+      break;
+    }
+
+    from += REVIEW_TAGS_PAGE_SIZE;
+  }
+
+  return Array.from(tagsById.values())
+    .sort((left, right) => {
+      if (left.reviewCount !== right.reviewCount) {
+        return right.reviewCount - left.reviewCount;
+      }
+
+      const nameComparison = left.name.localeCompare(right.name, "ja");
+
+      return nameComparison === 0 ? left.id.localeCompare(right.id) : nameComparison;
+    })
+    .slice(0, POPULAR_REVIEW_TAGS_LIMIT);
 }

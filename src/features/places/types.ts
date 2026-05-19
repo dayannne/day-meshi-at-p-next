@@ -15,3 +15,11 @@ export type Place = {
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
 };
+
+export type PlacePopularReviewTag = {
+  id: string;
+  name: string;
+  emoji: string | null;
+  categoryId: string;
+  reviewCount: number;
+};

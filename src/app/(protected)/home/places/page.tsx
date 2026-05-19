@@ -3,7 +3,11 @@ import { Plus } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
-import { getPlaceAction, getPlacesAction } from "@/features/places/actions";
+import {
+  getPlaceAction,
+  getPlacePopularReviewTagsAction,
+  getPlacesAction,
+} from "@/features/places/actions";
 import { PlacesList } from "@/features/places/components/PlacesList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { toPlaceMarker, toPlaceMarkers } from "@/features/places/placeMarkers";
@@ -49,11 +53,17 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const tagGroupsPromise = isNewPlaceReviewPanel ? getTagGroupsAction() : Promise.resolve(null);
   const selectedPlacePromise =
     isPlaceDetailPanel && selectedPlaceId ? getPlaceAction(selectedPlaceId) : Promise.resolve(null);
-  const [{ places, pagination }, tagGroups, selectedPlaceResult] = await Promise.all([
-    placesResultPromise,
-    tagGroupsPromise,
-    selectedPlacePromise,
-  ]);
+  const popularReviewTagsPromise =
+    isPlaceDetailPanel && selectedPlaceId
+      ? getPlacePopularReviewTagsAction(selectedPlaceId)
+      : Promise.resolve([]);
+  const [{ places, pagination }, tagGroups, selectedPlaceResult, popularReviewTags] =
+    await Promise.all([
+      placesResultPromise,
+      tagGroupsPromise,
+      selectedPlacePromise,
+      popularReviewTagsPromise,
+    ]);
   const selectedPlace =
     selectedPlaceId != null
       ? (places.find((place) => place.id === selectedPlaceId) ?? selectedPlaceResult)
@@ -115,6 +125,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         <PlaceDetailPanel
           closeHref={closePanelHref}
           place={selectedPlace}
+          popularReviewTags={popularReviewTags}
           requestedPlaceId={selectedPlaceId}
         />
       ) : null}
