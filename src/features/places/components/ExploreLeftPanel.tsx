@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Plus, Search, Star } from "lucide-react";
-import { PlacesList } from "@/features/places/components/PlacesList";
+import { PlaceList } from "@/features/places/components/PlaceList";
 import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { FilterList } from "./FilterList";
 import { Button } from "@/components/ui/Button";
@@ -196,7 +196,7 @@ export function ExploreLeftPanel({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4">
             <p className="mt-2 mb-2 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
             <div className="flex-1 overflow-y-auto">
-              <PlacesList places={places} placeDetailHrefs={placeDetailHrefs} />
+              <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
             </div>
           </div>
           <PlacesPagination
