@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
+
 import { useMapMarkerStore } from "@/stores";
 import type { Place } from "@/features/places/types";
 
 type PlacesListProps = {
   places: Place[];
+  placeDetailHrefs: Record<string, string>;
 };
 
-export function PlacesList({ places }: PlacesListProps) {
+export function PlacesList({ places, placeDetailHrefs }: PlacesListProps) {
   const selectedPlaceId = useMapMarkerStore((state) => state.selectedMarkerId);
   const selectPlace = useMapMarkerStore((state) => state.selectMarker);
 
@@ -27,15 +30,16 @@ export function PlacesList({ places }: PlacesListProps) {
 
         return (
           <li key={place.id} className="border-b border-slate-200 py-3">
-            <button
-              type="button"
-              aria-pressed={isSelected}
+            <Link
+              href={placeDetailHrefs[place.id] ?? "/home/places"}
+              scroll={false}
+              aria-current={isSelected ? "true" : undefined}
               onClick={() => selectPlace(place.id)}
               className="text-left font-semibold underline-offset-2 hover:underline"
             >
               {place.name}
               {isSelected ? " (selected)" : ""}
-            </button>
+            </Link>
 
             <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
               <dt>id</dt>

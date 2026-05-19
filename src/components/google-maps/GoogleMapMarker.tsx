@@ -8,13 +8,15 @@ import type { GoogleMapMarkerItem } from "./types";
 type GoogleMapMarkerProps = {
   marker: GoogleMapMarkerItem;
   selected: boolean;
-  onMarkerSelect?: (markerId: string) => void;
+  onMarkerSelect?: (markerId: string, event: unknown) => void;
 };
 
 export function GoogleMapMarker({ marker, selected, onMarkerSelect }: GoogleMapMarkerProps) {
   // 選択後の詳細表示やドメイン処理は外側の責務にし、地図は markerId だけを通知する。
   const isClickable = marker.clickable !== false && Boolean(onMarkerSelect);
-  const handleClick = isClickable ? () => onMarkerSelect?.(marker.id) : undefined;
+  const handleClick = isClickable
+    ? (event: unknown) => onMarkerSelect?.(marker.id, event)
+    : undefined;
 
   return (
     <AdvancedMarker

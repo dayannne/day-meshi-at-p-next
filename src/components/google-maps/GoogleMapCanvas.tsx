@@ -13,7 +13,12 @@ import {
 } from "./constants";
 import { GoogleMapMarker } from "./GoogleMapMarker";
 import { GoogleMapStatusMessage } from "./GoogleMapStatusMessage";
-import type { GoogleMapMarkerItem, GoogleMapProps } from "./types";
+import type {
+  GoogleMapMarkerItem,
+  GoogleMapPosition,
+  GoogleMapProps,
+  GoogleMapSelectedMarkerOcclusion,
+} from "./types";
 
 const EMPTY_MARKERS: GoogleMapMarkerItem[] = [];
 const DEFAULT_LOADING_CONTENT = {
@@ -23,6 +28,21 @@ const DEFAULT_LOADING_CONTENT = {
 const DEFAULT_ERROR_CONTENT = {
   title: "Map unavailable",
   message: "Check the Google Maps API settings.",
+};
+
+type MarkerClickPanState = {
+  markerId: string;
+  clientX: number | null;
+  clientY: number | null;
+};
+type GoogleMapInstance = NonNullable<ReturnType<typeof useMap>>;
+type GoogleMapProjection = {
+  fromLatLngToPoint: (latLng: unknown) => { x: number; y: number } | null;
+  fromPointToLatLng: (point: unknown) => { toJSON: () => GoogleMapPosition } | null;
+};
+type GoogleMapsRuntime = {
+  LatLng: new (lat: number, lng: number) => unknown;
+  Point: new (x: number, y: number) => unknown;
 };
 
 type GoogleMapCanvasProps = Omit<
@@ -37,6 +57,7 @@ export function GoogleMapCanvas({
   markers = EMPTY_MARKERS,
   showDefaultCenterMarker = true,
   selectedMarkerId = null,
+  selectedMarkerOcclusion,
   onMarkerSelect,
   defaultCenter = DEFAULT_GOOGLE_MAP_CENTER,
   defaultZoom = DEFAULT_GOOGLE_MAP_ZOOM,
@@ -50,7 +71,8 @@ export function GoogleMapCanvas({
   loadError,
 }: GoogleMapCanvasProps) {
   const loadingStatus = useApiLoadingStatus();
-  const markerClickPanSkipRef = useRef<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const markerClickPanStateRef = useRef<MarkerClickPanState | null>(null);
 
   // 認証失敗も利用者にとってはロード失敗と同じなので、同じフォールバック表示にまとめる。
   const hasLoadError =
@@ -65,13 +87,19 @@ export function GoogleMapCanvas({
     ? [DEFAULT_GOOGLE_MAP_CENTER_MARKER, ...markers]
     : markers;
   const selectedMarker = mapMarkers.find((marker) => marker.id === selectedMarkerId);
-  const handleMarkerSelect = (markerId: string) => {
-    markerClickPanSkipRef.current = markerId;
+  const handleMarkerSelect = (markerId: string, event: unknown) => {
+    const clickPoint = getClientPoint(getDomEvent(event));
+
+    markerClickPanStateRef.current = {
+      markerId,
+      clientX: clickPoint?.clientX ?? null,
+      clientY: clickPoint?.clientY ?? null,
+    };
     onMarkerSelect?.(markerId);
   };
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden", className)}>
+    <div ref={mapContainerRef} className={cn("relative h-full w-full overflow-hidden", className)}>
       {hasLoadError ? (
         <GoogleMapStatusMessage title={errorContent.title} message={errorContent.message} />
       ) : loadingStatus !== APILoadingStatus.LOADED ? (
@@ -96,7 +124,9 @@ export function GoogleMapCanvas({
         >
           <GoogleMapSelectedMarkerPan
             marker={selectedMarker}
-            markerClickPanSkipRef={markerClickPanSkipRef}
+            markerClickPanStateRef={markerClickPanStateRef}
+            mapContainerRef={mapContainerRef}
+            selectedMarkerOcclusion={selectedMarkerOcclusion}
           />
           {mapMarkers.map((marker) => (
             <GoogleMapMarker
@@ -115,10 +145,14 @@ export function GoogleMapCanvas({
 
 function GoogleMapSelectedMarkerPan({
   marker,
-  markerClickPanSkipRef,
+  markerClickPanStateRef,
+  mapContainerRef,
+  selectedMarkerOcclusion,
 }: {
   marker?: GoogleMapMarkerItem;
-  markerClickPanSkipRef: { current: string | null };
+  markerClickPanStateRef: { current: MarkerClickPanState | null };
+  mapContainerRef: { current: HTMLDivElement | null };
+  selectedMarkerOcclusion?: GoogleMapSelectedMarkerOcclusion;
 }) {
   const map = useMap();
   const markerId = marker?.id;
@@ -131,13 +165,146 @@ function GoogleMapSelectedMarkerPan({
       return;
     }
 
-    if (markerClickPanSkipRef.current === markerId) {
-      markerClickPanSkipRef.current = null;
+    const markerClickPanState = markerClickPanStateRef.current;
+
+    if (
+      markerClickPanState?.markerId === markerId &&
+      !isClickOccludedByPanel(markerClickPanState, mapContainerRef.current, selectedMarkerOcclusion)
+    ) {
+      markerClickPanStateRef.current = null;
       return;
     }
 
-    map.panTo({ lat, lng });
-  }, [lat, lng, map, markerClickPanSkipRef, markerId]);
+    markerClickPanStateRef.current = null;
+    map.panTo(
+      getOcclusionAdjustedCenter(map, { lat, lng }, selectedMarkerOcclusion) ?? {
+        lat,
+        lng,
+      }
+    );
+  }, [lat, lng, map, mapContainerRef, markerClickPanStateRef, markerId, selectedMarkerOcclusion]);
 
   return null;
+}
+
+function getDomEvent(event: unknown) {
+  if (!event || typeof event !== "object" || !("domEvent" in event)) {
+    return undefined;
+  }
+
+  const domEvent = event.domEvent;
+
+  return domEvent instanceof Event ? domEvent : undefined;
+}
+
+function getClientPoint(domEvent?: Event) {
+  if (!domEvent) {
+    return null;
+  }
+
+  if (
+    "clientX" in domEvent &&
+    typeof domEvent.clientX === "number" &&
+    "clientY" in domEvent &&
+    typeof domEvent.clientY === "number"
+  ) {
+    return {
+      clientX: domEvent.clientX,
+      clientY: domEvent.clientY,
+    };
+  }
+
+  const maybeTouchEvent = domEvent as Event & { changedTouches?: TouchList };
+
+  if (maybeTouchEvent.changedTouches && maybeTouchEvent.changedTouches.length > 0) {
+    const touch = maybeTouchEvent.changedTouches[0];
+
+    return {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    };
+  }
+
+  return null;
+}
+
+function isClickOccludedByPanel(
+  markerClickPanState: MarkerClickPanState,
+  mapContainer: HTMLDivElement | null,
+  selectedMarkerOcclusion?: GoogleMapSelectedMarkerOcclusion
+) {
+  if (
+    !selectedMarkerOcclusion ||
+    !mapContainer ||
+    markerClickPanState.clientX == null ||
+    markerClickPanState.clientY == null
+  ) {
+    return false;
+  }
+
+  const rect = mapContainer.getBoundingClientRect();
+  const x = markerClickPanState.clientX - rect.left;
+  const y = markerClickPanState.clientY - rect.top;
+  const topPx = selectedMarkerOcclusion.topPx ?? 0;
+  const bottomPx = selectedMarkerOcclusion.bottomPx ?? 0;
+
+  return x >= 0 && x <= selectedMarkerOcclusion.leftPx && y >= topPx && y <= rect.height - bottomPx;
+}
+
+function getOcclusionAdjustedCenter(
+  map: GoogleMapInstance,
+  markerPosition: GoogleMapPosition,
+  selectedMarkerOcclusion?: GoogleMapSelectedMarkerOcclusion
+) {
+  if (!selectedMarkerOcclusion) {
+    return null;
+  }
+
+  const projection = map.getProjection() as GoogleMapProjection | undefined;
+  const zoom = map.getZoom();
+  const mapsRuntime = getGoogleMapsRuntime();
+
+  if (!projection || zoom == null || !mapsRuntime) {
+    return null;
+  }
+
+  const markerPoint = projection.fromLatLngToPoint(
+    new mapsRuntime.LatLng(markerPosition.lat, markerPosition.lng)
+  );
+
+  if (!markerPoint) {
+    return null;
+  }
+
+  const scale = 2 ** zoom;
+  const xOffsetPx = selectedMarkerOcclusion.leftPx / 2;
+  const yOffsetPx =
+    ((selectedMarkerOcclusion.topPx ?? 0) - (selectedMarkerOcclusion.bottomPx ?? 0)) / 2;
+  const centerPoint = new mapsRuntime.Point(
+    markerPoint.x - xOffsetPx / scale,
+    markerPoint.y - yOffsetPx / scale
+  );
+  const center = projection.fromPointToLatLng(centerPoint);
+
+  return center?.toJSON() ?? null;
+}
+
+function getGoogleMapsRuntime(): GoogleMapsRuntime | null {
+  const maybeGoogle = (
+    window as Window & {
+      google?: {
+        maps?: Partial<GoogleMapsRuntime>;
+      };
+    }
+  ).google;
+  const maps = maybeGoogle?.maps;
+
+  if (!maps?.LatLng || !maps.Point) {
+    return null;
+  }
+
+  return {
+    LatLng: maps.LatLng,
+    Point: maps.Point,
+  };
 }
