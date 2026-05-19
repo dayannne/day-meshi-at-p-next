@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Plus, Search, Star } from "lucide-react";
 import { PlaceList } from "@/features/places/components/PlaceList";
-import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { FilterList } from "./FilterList";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -12,6 +11,7 @@ import type { Place } from "@/features/places/types";
 import { TagButton } from "@/components/ui/TagButton";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useFilterNavigation } from "../hooks/useFilterNavigation";
+import { Paginator } from "@/components/ui/Paginator";
 
 // 価格帯の表示ラベル用マスター
 const PRICE_LEVELS = [
@@ -193,18 +193,15 @@ export function ExploreLeftPanel({
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4">
-            <p className="mt-2 mb-2 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
-            <div className="flex-1 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <p className="p-4 pb-3 text-sm font-semibold text-slate-950">
+              お店一覧 ({pagination.totalCount}件)
+            </p>
+            <div className="flex-1 overflow-y-auto px-4 pb-3">
               <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
             </div>
           </div>
-          <PlacesPagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            hasPreviousPage={pagination.hasPreviousPage}
-            hasNextPage={pagination.hasNextPage}
-          />
+          <Paginator pagination={pagination} baseUrl="/home/places" />
         </>
       )}
     </div>
