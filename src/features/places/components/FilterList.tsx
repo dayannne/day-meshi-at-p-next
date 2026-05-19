@@ -33,7 +33,7 @@ export function FilterList({ onClose }: FilterListProps) {
   const {
     rating,
     price,
-    selectedTagIds,
+    selectedTags,
     selectedCategories,
     tagGroups,
     isTagsLoading,
@@ -130,7 +130,7 @@ export function FilterList({ onClose }: FilterListProps) {
                 categoryName={group.category.name}
                 tags={group.tags}
                 variant={variantColor}
-                selectedTags={selectedTagIds}
+                selectedTags={selectedTags}
                 onTagToggle={toggleTagSelection}
               />
             );

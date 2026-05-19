@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Tag, TagGroup } from "@/features/tag/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getTagGroupsAction } from "@/features/tag/actions";
-import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
+
 const GOOGLE_PLACE_CATEGORIES = {
   CAFE: "カフェ",
   SUSHI: "寿司",
@@ -84,7 +84,7 @@ export const useFilterNavigation = () => {
   };
 
   // タグの追加と削除
-  const toggleTagSelection = (tag: string | Tag) => {
+  const toggleTagSelection = (tag: Tag) => {
     const params = new URLSearchParams(searchParams.toString());
     const tagId = typeof tag === "string" ? tag : tag.id;
     const currentTags = params.getAll("tags");
@@ -119,10 +119,9 @@ export const useFilterNavigation = () => {
     rating,
     price,
     isGochimeshi,
-    selectedTagIds,
     selectedCategories,
-    tagGroups, // 💡 カテゴリ一覧の描画用に使う
-    selectedTags, // 💡 選択中のバッジ（名前・絵文字付き）の描画用に使う
+    tagGroups,
+    selectedTags,
     isTagsLoading,
     setRating,
     setPrice,

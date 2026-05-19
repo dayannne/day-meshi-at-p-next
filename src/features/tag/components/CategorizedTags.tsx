@@ -16,8 +16,8 @@ interface CategorizedTagsProps {
     | "secondary_outline"
     | "tertiary_outline"
     | "neutral_outline";
-  selectedTags?: Tag[] | string[];
-  onTagToggle?: (tagName: Tag | string) => void;
+  selectedTags?: Tag[];
+  onTagToggle?: (tagName: Tag) => void;
 }
 
 export const CategorizedTags = ({
@@ -47,12 +47,7 @@ export const CategorizedTags = ({
       {/* タグ一覧レイアウト */}
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => {
-          const isSelected = selectedTags.some((t) => {
-            if (typeof t === "string") {
-              return t === tag.id;
-            }
-            return t?.id === tag.id;
-          });
+          const isSelected = selectedTags.some((t) => t.id === tag.id);
 
           // TagButton を使用
           return (
