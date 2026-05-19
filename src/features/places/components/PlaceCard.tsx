@@ -1,7 +1,7 @@
 import React from "react";
 import type { Place } from "@/features/places/types";
 import Image from "next/image";
-import { Bookmark, MapPin, Star } from "lucide-react";
+import { Bookmark, MapPin, SportShoe, Star } from "lucide-react";
 import { Tag } from "@/components/ui/Tag";
 import Link from "next/link";
 import { getWalkingDurationMinutes } from "@/lib/utils";
@@ -53,8 +53,14 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
             <span className="font-semibold">·</span>
             <div className="inline-flex items-center gap-1">
               <MapPin className="h-3 w-3 text-slate-500" />
-              <span className="text-sm text-slate-500">
-                {place.distanceFromOfficeMeters}m{" "}
+              <span className="text-sm text-slate-500">{place.distanceFromOfficeMeters}m</span>
+            </div>
+            <span className="font-semibold">·</span>
+
+            <div className="inline-flex items-center gap-1 text-slate-500">
+              <SportShoe className="h-3 w-3" />
+
+              <span className="text-sm">
                 {getWalkingDurationMinutes(place.walkingDurationSeconds)}
                 <span className="text-xs">分</span>
               </span>
