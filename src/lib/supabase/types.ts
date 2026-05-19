@@ -341,7 +341,21 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_place_popular_review_tags: {
+        Args: {
+          p_place_id: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          name: string;
+          emoji: string | null;
+          category_id: string;
+          review_count: number;
+        }[];
+      };
+    };
     Enums: {
       user_role: "USER" | "ADMIN";
       user_status: "ACTIVE" | "SUSPENDED";

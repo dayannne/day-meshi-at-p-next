@@ -4,6 +4,7 @@ import {
   fetchGooglePlaceBusinessDetails,
   type GooglePlacePhotoAttribution,
 } from "@/features/places/googlePlaces";
+import { getPlacePopularReviewTags } from "@/features/places/placeReviewInsights";
 import type {
   Place,
   PlaceDetailData,
@@ -36,7 +37,6 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
 const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
-const REVIEW_TAGS_PAGE_SIZE = 1000;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -62,17 +62,6 @@ const EMPTY_PLACE_DETAIL_DATA: PlaceDetailData = {
   popularReviewTags: [],
   reviewPreviews: [],
   googleBusinessDetails: null,
-};
-
-type EmbeddedReviewTagTag = {
-  id: string;
-  name: string;
-  emoji: string | null;
-  category_id: string;
-};
-
-type ReviewTagWithTag = {
-  tags: EmbeddedReviewTagTag | EmbeddedReviewTagTag[] | null;
 };
 
 type ReviewPreviewRow = {
@@ -142,14 +131,6 @@ function toPlace(place: {
     distanceFromOfficeMeters: place.distance_from_office_meters,
     walkingDurationSeconds: place.walking_duration_seconds,
   };
-}
-
-function getEmbeddedReviewTagTag(row: ReviewTagWithTag): EmbeddedReviewTagTag | null {
-  if (Array.isArray(row.tags)) {
-    return row.tags[0] ?? null;
-  }
-
-  return row.tags;
 }
 
 async function fetchNullableGoogleBusinessDetails(
@@ -274,77 +255,8 @@ export async function getPlacePopularReviewTagsAction(
   }
 
   const supabase = await createClient();
-  const tagsById = new Map<string, PlacePopularReviewTag>();
-  let from = 0;
 
-  while (true) {
-    const { data, error } = await supabase
-      .from("review_tags")
-      .select(
-        `
-          tags!inner (
-            id,
-            name,
-            emoji,
-            category_id
-          ),
-          reviews!inner (
-            place_id
-          )
-        `
-      )
-      .eq("reviews.place_id", normalizedPlaceId)
-      .order("review_id", { ascending: true })
-      .order("tag_id", { ascending: true })
-      .range(from, from + REVIEW_TAGS_PAGE_SIZE - 1);
-
-    if (error) {
-      throw new Error("Failed to load popular review tags.");
-    }
-
-    const rows = (data ?? []) as ReviewTagWithTag[];
-
-    for (const row of rows) {
-      const tag = getEmbeddedReviewTagTag(row);
-
-      if (!tag) {
-        continue;
-      }
-
-      const currentTag = tagsById.get(tag.id);
-
-      if (currentTag) {
-        currentTag.reviewCount += 1;
-        continue;
-      }
-
-      tagsById.set(tag.id, {
-        id: tag.id,
-        name: tag.name,
-        emoji: tag.emoji,
-        categoryId: tag.category_id,
-        reviewCount: 1,
-      });
-    }
-
-    if (rows.length < REVIEW_TAGS_PAGE_SIZE) {
-      break;
-    }
-
-    from += REVIEW_TAGS_PAGE_SIZE;
-  }
-
-  return Array.from(tagsById.values())
-    .sort((left, right) => {
-      if (left.reviewCount !== right.reviewCount) {
-        return right.reviewCount - left.reviewCount;
-      }
-
-      const nameComparison = left.name.localeCompare(right.name, "ja");
-
-      return nameComparison === 0 ? left.id.localeCompare(right.id) : nameComparison;
-    })
-    .slice(0, POPULAR_REVIEW_TAGS_LIMIT);
+  return getPlacePopularReviewTags(supabase, normalizedPlaceId, POPULAR_REVIEW_TAGS_LIMIT);
 }
 
 export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
