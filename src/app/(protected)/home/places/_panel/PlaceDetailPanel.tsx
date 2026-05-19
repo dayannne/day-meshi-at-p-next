@@ -134,23 +134,31 @@ function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails 
   );
 }
 
-function PopularReviewTagsSection({ tags }: { tags: PlacePopularReviewTag[] }) {
-  // 리뷰 기반 인기 태그만 담당한다. 장소의 기본 카테고리는 상단 기본 정보 영역에 둔다.
+function PopularReviewTagsSection({
+  category,
+  tags,
+}: {
+  category: string | null;
+  tags: PlacePopularReviewTag[];
+}) {
+  // 카테고리는 첫 번째 칩으로 고정하고, 리뷰 기반 인기 태그는 그 뒤에 붙인다.
   return (
     <section className="border-t border-slate-200 pt-4">
-      <h5 className="text-sm font-bold text-slate-950">人気タグ</h5>
-      {tags.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Tag key={tag.id} className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
-              {tag.emoji ? <span>{tag.emoji}</span> : null}
-              <span className="break-words">{tag.name}</span>
-            </Tag>
-          ))}
-        </div>
-      ) : (
+      <h5 className="text-sm font-bold text-slate-950">カテゴリ・人気タグ</h5>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
+          <span className="break-words">{category ?? "カテゴリ未設定"}</span>
+        </Tag>
+        {tags.map((tag) => (
+          <Tag key={tag.id} className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
+            {tag.emoji ? <span>{tag.emoji}</span> : null}
+            <span className="break-words">{tag.name}</span>
+          </Tag>
+        ))}
+      </div>
+      {tags.length === 0 ? (
         <p className="mt-3 text-sm text-slate-500">まだタグ付きレビューがありません。</p>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -243,7 +251,13 @@ function PlaceNotFound({ placeId }: { placeId: string }) {
   );
 }
 
-async function PlaceDetailExtras({ placeId }: { placeId: string }) {
+async function PlaceDetailExtras({
+  category,
+  placeId,
+}: {
+  category: string | null;
+  placeId: string;
+}) {
   // 부가 정보는 기본 장소 표시 이후 병렬로 로드해서 패널 첫 표시를 막지 않는다.
   const [googleBusinessDetails, popularReviewTags, reviewPreviews] = await Promise.all([
     getPlaceGoogleBusinessDetailsAction(placeId),
@@ -254,7 +268,7 @@ async function PlaceDetailExtras({ placeId }: { placeId: string }) {
   return (
     <>
       <BusinessInfoSection details={googleBusinessDetails} />
-      <PopularReviewTagsSection tags={popularReviewTags} />
+      <PopularReviewTagsSection category={category} tags={popularReviewTags} />
       <ReviewPreviewsSection reviews={reviewPreviews} />
     </>
   );
@@ -302,12 +316,10 @@ async function PlaceDetailBody({ placeId, detailHref }: { placeId: string; detai
             <dd>
               {place.avgRating} ({place.reviewCount}件)
             </dd>
-            <dt className="font-semibold text-slate-950">カテゴリ</dt>
-            <dd className="break-words">{place.category ?? "カテゴリ未設定"}</dd>
           </dl>
 
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
-            <PlaceDetailExtras placeId={place.id} />
+            <PlaceDetailExtras category={place.category} placeId={place.id} />
           </Suspense>
         </div>
       </div>
