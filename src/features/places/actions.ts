@@ -21,6 +21,7 @@ const PLACES_SELECT_COLUMNS = `
   google_place_id,
   name,
   category,
+  price_range,
   lat,
   lng,
   image_url,
@@ -102,6 +103,7 @@ function toPlace(place: {
   google_place_id: string;
   name: string;
   category: string | null;
+  price_range: number | null;
   lat: number;
   lng: number;
   image_url: string | null;
@@ -117,6 +119,7 @@ function toPlace(place: {
     googlePlaceId: place.google_place_id,
     name: place.name,
     category: place.category,
+    price_range: place.price_range,
     lat: place.lat,
     lng: place.lng,
     imageUrl: place.image_url,

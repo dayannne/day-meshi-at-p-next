@@ -5,6 +5,7 @@ export type Place = {
   googlePlaceId: string;
   name: string;
   category: string | null;
+  price_range: number | null;
   lat: number;
   lng: number;
   imageUrl: string | null;
