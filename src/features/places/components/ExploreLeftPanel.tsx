@@ -193,9 +193,11 @@ export function ExploreLeftPanel({
         </div>
       ) : (
         <>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4">
-            <p className="mt-2 mb-2 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
-            <div className="flex-1 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <p className="p-4 pb-3 text-sm font-semibold text-slate-950">
+              お店一覧 ({pagination.totalCount}件)
+            </p>
+            <div className="flex-1 overflow-y-auto px-4 pb-3">
               <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
             </div>
           </div>
