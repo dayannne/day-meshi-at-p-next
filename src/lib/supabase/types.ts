@@ -90,6 +90,7 @@ export type Database = {
           image_url: string | null;
           photo_attributions: Json;
           category: string | null;
+          price_range: number | null;
           is_gochimeshi: boolean;
           avg_rating: number;
           review_count: number;
@@ -107,6 +108,7 @@ export type Database = {
           image_url?: string | null;
           photo_attributions?: Json;
           category?: string | null;
+          price_range?: number | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
@@ -124,6 +126,7 @@ export type Database = {
           image_url?: string | null;
           photo_attributions?: Json;
           category?: string | null;
+          price_range?: number | null;
           is_gochimeshi?: boolean;
           avg_rating?: number;
           review_count?: number;
