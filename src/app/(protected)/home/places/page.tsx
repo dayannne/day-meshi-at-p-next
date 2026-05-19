@@ -11,6 +11,7 @@ import {
   PLACE_DETAIL_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
+import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -87,7 +88,15 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           placeDetailHrefs={placeDetailHrefs} // 一覧のリンク用
         />
       </div>
-      {isNewPlaceReviewPanel ? <NewPlaceReviewPanel closeHref={closePanelHref} /> : null}
+      <PlacesPagination
+        currentPage={pagination.page}
+        totalPages={pagination.totalPages}
+        hasPreviousPage={pagination.hasPreviousPage}
+        hasNextPage={pagination.hasNextPage}
+      />
+      {isNewPlaceReviewPanel ? (
+        <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
+      ) : null}
       {isPlaceDetailPanel && selectedPlaceId ? (
         <PlaceDetailPanel
           closeHref={closePanelHref}
