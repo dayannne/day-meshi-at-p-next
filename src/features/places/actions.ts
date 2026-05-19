@@ -66,10 +66,14 @@ const EMPTY_PLACE_DETAIL_DATA: PlaceDetailData = {
 
 type ReviewPreviewRow = {
   id: string;
-  user_id: string;
   rating: number;
   comment: string | null;
   created_at: string;
+  profiles: EmbeddedReviewPreviewProfile | EmbeddedReviewPreviewProfile[] | null;
+};
+
+type EmbeddedReviewPreviewProfile = {
+  nickname: string | null;
 };
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -141,6 +145,12 @@ async function fetchNullableGoogleBusinessDetails(
   } catch {
     return null;
   }
+}
+
+function getReviewPreviewAuthorName(row: ReviewPreviewRow): string {
+  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+
+  return profile?.nickname ?? "社員";
 }
 
 export async function getPlacesAction({
@@ -271,7 +281,17 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
   const admin = createAdminClient();
   const { data: reviews, error: reviewsError } = await admin
     .from("reviews")
-    .select("id, user_id, rating, comment, created_at")
+    .select(
+      `
+        id,
+        rating,
+        comment,
+        created_at,
+        profiles!reviews_user_id_fkey (
+          nickname
+        )
+      `
+    )
     .eq("place_id", normalizedPlaceId)
     .order("created_at", { ascending: false })
     .order("id", { ascending: true })
@@ -282,28 +302,10 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
   }
 
   const reviewRows = (reviews ?? []) as ReviewPreviewRow[];
-  const authorIds = Array.from(new Set(reviewRows.map((review) => review.user_id)));
-
-  if (authorIds.length === 0) {
-    return [];
-  }
-
-  const { data: profiles, error: profilesError } = await admin
-    .from("profiles")
-    .select("id, nickname")
-    .in("id", authorIds);
-
-  if (profilesError) {
-    throw new Error("Failed to load review authors.");
-  }
-
-  const authorNamesById = new Map(
-    (profiles ?? []).map((profile) => [profile.id, profile.nickname])
-  );
 
   return reviewRows.map((review) => ({
     id: review.id,
-    authorName: authorNamesById.get(review.user_id) ?? "社員",
+    authorName: getReviewPreviewAuthorName(review),
     rating: review.rating,
     comment: review.comment?.trim() || "コメントなし",
     date: review.created_at,
