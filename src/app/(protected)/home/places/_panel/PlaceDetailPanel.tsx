@@ -196,10 +196,10 @@ function ReviewPreviewsSection({ reviews }: { reviews: PlaceReviewPreview[] }) {
 }
 
 function PlaceDetailLoading() {
-  // 바깥 Suspense fallback. 패널 프레임은 유지하고 기본 장소 정보 영역만 skeleton으로 보여준다.
+  // 바깥 Suspense fallback. 로딩 중에도 기존 리스트 마커 선택은 유지해야 하므로 선택 상태는 건드리지 않는다.
   return (
     <>
-      <MapMarkersSync source="place-detail" markers={[]} selectedMarkerId={null} />
+      <MapMarkersSync source="place-detail" markers={[]} />
       <div className="h-full overflow-y-auto p-6">
         <div className="space-y-4">
           <div className="aspect-4/3 w-full animate-pulse rounded-lg bg-slate-100" />
