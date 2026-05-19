@@ -1,5 +1,7 @@
+import { Button } from "@/components/ui/Button";
 import { Tag } from "@/components/ui/Tag";
-import type { Place, PlacePopularReviewTag } from "@/features/places/types";
+import { ReviewCard } from "@/features/review/components/ReviewCard";
+import type { Place, PlacePopularReviewTag, PlaceReviewPreview } from "@/features/places/types";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 
@@ -7,6 +9,7 @@ type PlaceDetailPanelProps = {
   closeHref: string;
   place: Place | null;
   popularReviewTags: PlacePopularReviewTag[];
+  reviewPreviews: PlaceReviewPreview[];
   requestedPlaceId?: string;
 };
 
@@ -60,6 +63,7 @@ export function PlaceDetailPanel({
   closeHref,
   place,
   popularReviewTags,
+  reviewPreviews,
   requestedPlaceId,
 }: PlaceDetailPanelProps) {
   return (
@@ -108,6 +112,39 @@ export function PlaceDetailPanel({
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-slate-500">まだタグ付きレビューがありません。</p>
+              )}
+            </section>
+
+            <section className="border-t border-slate-200 pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <h5 className="text-sm font-bold text-slate-950">社員レビュー</h5>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  className="h-8 px-2 text-xs"
+                >
+                  全てのレビュー
+                </Button>
+              </div>
+
+              {reviewPreviews.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {reviewPreviews.map((review) => (
+                    <ReviewCard
+                      key={review.id}
+                      id={review.id}
+                      name={review.authorName}
+                      rating={review.rating}
+                      comment={review.comment}
+                      date={review.date}
+                      variant="placeDetail"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-slate-500">まだ社員レビューがありません。</p>
               )}
             </section>
           </div>

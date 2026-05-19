@@ -23,3 +23,11 @@ export type PlacePopularReviewTag = {
   categoryId: string;
   reviewCount: number;
 };
+
+export type PlaceReviewPreview = {
+  id: string;
+  authorName: string;
+  rating: number;
+  comment: string;
+  date: string;
+};

@@ -1,7 +1,9 @@
 "use server";
 
 import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
-import type { Place, PlacePopularReviewTag } from "@/features/places/types";
+import type { Place, PlacePopularReviewTag, PlaceReviewPreview } from "@/features/places/types";
+import { requireActiveUser } from "@/features/auth/access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,6 +26,7 @@ const PLACES_SELECT_COLUMNS = `
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
+const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 const REVIEW_TAGS_PAGE_SIZE = 1000;
 
 type GetPlacesActionParams = {
@@ -54,6 +57,14 @@ type EmbeddedReviewTagTag = {
 
 type ReviewTagWithTag = {
   tags: EmbeddedReviewTagTag | EmbeddedReviewTagTag[] | null;
+};
+
+type ReviewPreviewRow = {
+  id: string;
+  user_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
 };
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -271,4 +282,55 @@ export async function getPlacePopularReviewTagsAction(
       return nameComparison === 0 ? left.id.localeCompare(right.id) : nameComparison;
     })
     .slice(0, POPULAR_REVIEW_TAGS_LIMIT);
+}
+
+export async function getPlaceReviewPreviewsAction(placeId: string): Promise<PlaceReviewPreview[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return [];
+  }
+
+  await requireActiveUser();
+
+  const admin = createAdminClient();
+  const { data: reviews, error: reviewsError } = await admin
+    .from("reviews")
+    .select("id, user_id, rating, comment, created_at")
+    .eq("place_id", normalizedPlaceId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(PLACE_REVIEW_PREVIEWS_LIMIT);
+
+  if (reviewsError) {
+    throw new Error("Failed to load review previews.");
+  }
+
+  const reviewRows = (reviews ?? []) as ReviewPreviewRow[];
+  const authorIds = Array.from(new Set(reviewRows.map((review) => review.user_id)));
+
+  if (authorIds.length === 0) {
+    return [];
+  }
+
+  const { data: profiles, error: profilesError } = await admin
+    .from("profiles")
+    .select("id, nickname")
+    .in("id", authorIds);
+
+  if (profilesError) {
+    throw new Error("Failed to load review authors.");
+  }
+
+  const authorNamesById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile.nickname])
+  );
+
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorName: authorNamesById.get(review.user_id) ?? "社員",
+    rating: review.rating,
+    comment: review.comment?.trim() || "コメントなし",
+    date: review.created_at,
+  }));
 }

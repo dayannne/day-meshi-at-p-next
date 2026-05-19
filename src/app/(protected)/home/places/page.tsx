@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import {
   getPlaceAction,
   getPlacePopularReviewTagsAction,
+  getPlaceReviewPreviewsAction,
   getPlacesAction,
 } from "@/features/places/actions";
 import { PlacesList } from "@/features/places/components/PlacesList";
@@ -57,13 +58,23 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     isPlaceDetailPanel && selectedPlaceId
       ? getPlacePopularReviewTagsAction(selectedPlaceId)
       : Promise.resolve([]);
-  const [{ places, pagination }, tagGroups, selectedPlaceResult, popularReviewTags] =
-    await Promise.all([
-      placesResultPromise,
-      tagGroupsPromise,
-      selectedPlacePromise,
-      popularReviewTagsPromise,
-    ]);
+  const reviewPreviewsPromise =
+    isPlaceDetailPanel && selectedPlaceId
+      ? getPlaceReviewPreviewsAction(selectedPlaceId)
+      : Promise.resolve([]);
+  const [
+    { places, pagination },
+    tagGroups,
+    selectedPlaceResult,
+    popularReviewTags,
+    reviewPreviews,
+  ] = await Promise.all([
+    placesResultPromise,
+    tagGroupsPromise,
+    selectedPlacePromise,
+    popularReviewTagsPromise,
+    reviewPreviewsPromise,
+  ]);
   const selectedPlace =
     selectedPlaceId != null
       ? (places.find((place) => place.id === selectedPlaceId) ?? selectedPlaceResult)
@@ -126,6 +137,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           closeHref={closePanelHref}
           place={selectedPlace}
           popularReviewTags={popularReviewTags}
+          reviewPreviews={reviewPreviews}
           requestedPlaceId={selectedPlaceId}
         />
       ) : null}
