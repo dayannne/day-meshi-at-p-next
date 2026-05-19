@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireActiveUser } from "@/features/auth/access";
 import {
+  getGooglePlaceCategory,
   verifyGooglePlaceSelection,
   type GooglePlaceDetails,
   type SignedGooglePlaceDetails,
@@ -53,7 +54,9 @@ function hasValidSelectedPlaceInput(
     place.sessionToken &&
     place.selectionSignature &&
     place.name &&
-    place.category &&
+    typeof place.primaryType === "string" &&
+    place.primaryType &&
+    place.category === getGooglePlaceCategory(place.primaryType) &&
     Array.isArray(place.types) &&
     Array.isArray(place.photoAttributions) &&
     hasValidCoordinates(place)

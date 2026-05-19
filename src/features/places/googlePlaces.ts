@@ -9,7 +9,25 @@ export const GOOGLE_PLACES_SEARCH_CENTER = DEFAULT_GOOGLE_MAP_CENTER;
 export const GOOGLE_PLACES_SEARCH_RADIUS_METERS = 2000;
 export const GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES = ["restaurant", "bar", "cafe"] as const;
 
-export type GooglePlacePrimaryType = (typeof GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES)[number];
+export const GOOGLE_PLACE_CATEGORIES = {
+  CAFE: "カフェ",
+  SUSHI: "寿司",
+  RAMEN: "ラーメン",
+  CHINESE: "中華",
+  CURRY: "カレー",
+  IZAKAYA: "居酒屋",
+  SWEETS: "スイーツ",
+  BAR: "バー",
+  JAPANESE: "和食",
+  YAKINIKU: "焼肉",
+  WESTERN: "洋食",
+  FAST_FOOD: "ファストフード",
+  ASIAN: "アジア",
+  OTHERS: "その他",
+} as const;
+
+export type GooglePlaceCategory =
+  (typeof GOOGLE_PLACE_CATEGORIES)[keyof typeof GOOGLE_PLACE_CATEGORIES];
 
 export type GooglePlaceSuggestion = {
   placeId: string;
@@ -27,7 +45,8 @@ export type GooglePlaceDetails = {
   lat: number;
   lng: number;
   types: string[];
-  category: GooglePlacePrimaryType;
+  primaryType: string;
+  category: GooglePlaceCategory;
   imageUrl: string | null;
   photoAttributions: GooglePlacePhotoAttribution[];
   distanceFromOfficeMeters: number | null;
@@ -85,6 +104,7 @@ type GooglePlaceDetailsResponse = {
     }>;
   }>;
   types?: string[];
+  primaryType?: string;
 };
 
 type GooglePlacePhoto = NonNullable<GooglePlaceDetailsResponse["photos"]>[number];
@@ -100,12 +120,254 @@ type GoogleRouteResponse = {
   }>;
 };
 
+const GOOGLE_PLACE_CATEGORY_RULES: Array<{
+  category: GooglePlaceCategory;
+  primaryTypes: string[];
+}> = [
+  {
+    category: GOOGLE_PLACE_CATEGORIES.CAFE,
+    primaryTypes: [
+      "cafe",
+      "coffee_shop",
+      "coffee_roastery",
+      "coffee_stand",
+      "tea_house",
+      "bagel_shop",
+      "acai_shop",
+      "juice_shop",
+      "cat_cafe",
+      "dog_cafe",
+      "cafeteria",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.SUSHI,
+    primaryTypes: ["sushi_restaurant"],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.RAMEN,
+    primaryTypes: ["ramen_restaurant"],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.CHINESE,
+    primaryTypes: [
+      "chinese_restaurant",
+      "chinese_noodle_restaurant",
+      "cantonese_restaurant",
+      "dim_sum_restaurant",
+      "dumpling_restaurant",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.CURRY,
+    primaryTypes: [
+      "japanese_curry_restaurant",
+      "indian_restaurant",
+      "north_indian_restaurant",
+      "south_indian_restaurant",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.IZAKAYA,
+    primaryTypes: [
+      "japanese_izakaya_restaurant",
+      "yakitori_restaurant",
+      "pub",
+      "gastropub",
+      "bar_and_grill",
+      "snack_bar",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.SWEETS,
+    primaryTypes: [
+      "bakery",
+      "dessert_restaurant",
+      "dessert_shop",
+      "cake_shop",
+      "pastry_shop",
+      "confectionery",
+      "candy_store",
+      "chocolate_shop",
+      "chocolate_factory",
+      "ice_cream_shop",
+      "donut_shop",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.BAR,
+    primaryTypes: [
+      "bar",
+      "cocktail_bar",
+      "wine_bar",
+      "lounge_bar",
+      "hookah_bar",
+      "sports_bar",
+      "brewery",
+      "brewpub",
+      "beer_garden",
+      "winery",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.JAPANESE,
+    primaryTypes: ["japanese_restaurant", "tonkatsu_restaurant"],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.YAKINIKU,
+    primaryTypes: [
+      "yakiniku_restaurant",
+      "korean_barbecue_restaurant",
+      "barbecue_restaurant",
+      "mongolian_barbecue_restaurant",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.WESTERN,
+    primaryTypes: [
+      "western_restaurant",
+      "italian_restaurant",
+      "french_restaurant",
+      "spanish_restaurant",
+      "steak_house",
+      "pizza_restaurant",
+      "pizza_delivery",
+      "american_restaurant",
+      "british_restaurant",
+      "german_restaurant",
+      "greek_restaurant",
+      "mediterranean_restaurant",
+      "mexican_restaurant",
+      "tex_mex_restaurant",
+      "tapas_restaurant",
+      "bistro",
+      "diner",
+      "fish_and_chips_restaurant",
+      "fondue_restaurant",
+      "austrian_restaurant",
+      "belgian_restaurant",
+      "czech_restaurant",
+      "danish_restaurant",
+      "dutch_restaurant",
+      "european_restaurant",
+      "irish_restaurant",
+      "polish_restaurant",
+      "portuguese_restaurant",
+      "romanian_restaurant",
+      "russian_restaurant",
+      "scandinavian_restaurant",
+      "swiss_restaurant",
+      "ukrainian_restaurant",
+      "hungarian_restaurant",
+      "croatian_restaurant",
+      "bavarian_restaurant",
+      "basque_restaurant",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.FAST_FOOD,
+    primaryTypes: [
+      "hamburger_restaurant",
+      "fast_food_restaurant",
+      "sandwich_shop",
+      "hot_dog_restaurant",
+      "hot_dog_stand",
+      "taco_restaurant",
+      "burrito_restaurant",
+      "falafel_restaurant",
+      "kebab_shop",
+      "shawarma_restaurant",
+      "gyro_restaurant",
+      "chicken_restaurant",
+      "chicken_wings_restaurant",
+      "meal_takeaway",
+      "meal_delivery",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.ASIAN,
+    primaryTypes: [
+      "korean_restaurant",
+      "asian_restaurant",
+      "asian_fusion_restaurant",
+      "thai_restaurant",
+      "vietnamese_restaurant",
+      "indonesian_restaurant",
+      "malaysian_restaurant",
+      "filipino_restaurant",
+      "taiwanese_restaurant",
+      "cambodian_restaurant",
+      "burmese_restaurant",
+      "tibetan_restaurant",
+      "sri_lankan_restaurant",
+      "bangladeshi_restaurant",
+      "pakistani_restaurant",
+    ],
+  },
+  {
+    category: GOOGLE_PLACE_CATEGORIES.OTHERS,
+    primaryTypes: [
+      "noodle_shop",
+      "restaurant",
+      "family_restaurant",
+      "buffet_restaurant",
+      "brunch_restaurant",
+      "breakfast_restaurant",
+      "food_court",
+      "fine_dining_restaurant",
+      "vegan_restaurant",
+      "vegetarian_restaurant",
+      "salad_shop",
+      "soup_restaurant",
+      "seafood_restaurant",
+      "oyster_bar_restaurant",
+      "halal_restaurant",
+      "fusion_restaurant",
+      "latin_american_restaurant",
+      "brazilian_restaurant",
+      "peruvian_restaurant",
+      "argentinian_restaurant",
+      "chilean_restaurant",
+      "colombian_restaurant",
+      "cuban_restaurant",
+      "caribbean_restaurant",
+      "middle_eastern_restaurant",
+      "lebanese_restaurant",
+      "turkish_restaurant",
+      "persian_restaurant",
+      "israeli_restaurant",
+      "african_restaurant",
+      "ethiopian_restaurant",
+      "moroccan_restaurant",
+      "afghani_restaurant",
+      "australian_restaurant",
+      "cajun_restaurant",
+      "californian_restaurant",
+      "southwestern_us_restaurant",
+      "soul_food_restaurant",
+      "hawaiian_restaurant",
+    ],
+  },
+];
+
+const GOOGLE_PLACE_CATEGORY_BY_PRIMARY_TYPE = new Map(
+  GOOGLE_PLACE_CATEGORY_RULES.flatMap(({ category, primaryTypes }) =>
+    primaryTypes.map((primaryType) => [primaryType, category] as const)
+  )
+);
+
 function getGoogleMapsApiKey() {
   return getServerGoogleMapsEnv().apiKey;
 }
 
-function getAllowedPlaceCategory(types: string[]): GooglePlacePrimaryType | null {
-  return GOOGLE_PLACES_INCLUDED_PRIMARY_TYPES.find((type) => types.includes(type)) ?? null;
+export function getGooglePlaceCategory(
+  primaryType: string | null | undefined
+): GooglePlaceCategory | null {
+  if (!primaryType) {
+    return null;
+  }
+
+  return GOOGLE_PLACE_CATEGORY_BY_PRIMARY_TYPE.get(primaryType) ?? null;
 }
 
 function parseDurationSeconds(duration: string | undefined): number | null {
@@ -130,6 +392,7 @@ function createPlaceSelectionPayload(details: GooglePlaceDetails, sessionToken: 
     lat: details.lat,
     lng: details.lng,
     types: details.types,
+    primaryType: details.primaryType,
     category: details.category,
     imageUrl: details.imageUrl,
     photoAttributions: details.photoAttributions,
@@ -375,7 +638,7 @@ export async function fetchGooglePlaceDetails({
         "Content-Type": "application/json",
         "X-Goog-Api-Key": getGoogleMapsApiKey(),
         "X-Goog-FieldMask":
-          "id,displayName,formattedAddress,location,types,photos.name,photos.authorAttributions",
+          "id,displayName,formattedAddress,location,types,primaryType,photos.name,photos.authorAttributions",
       },
     }
   );
@@ -390,15 +653,16 @@ export async function fetchGooglePlaceDetails({
   const lat = data.location?.latitude;
   const lng = data.location?.longitude;
   const types = data.types ?? [];
-  const category = getAllowedPlaceCategory(types);
+  const primaryType = data.primaryType ?? null;
+  const category = getGooglePlaceCategory(primaryType);
   const photo = data.photos?.[0];
 
   if (!resolvedPlaceId || !name || typeof lat !== "number" || typeof lng !== "number") {
     throw new Error("Google place details response is missing required fields.");
   }
 
-  if (!category) {
-    throw new Error("Selected Google place is not an allowed food or drink place.");
+  if (!primaryType || !category) {
+    throw new Error("Google place primaryType is not supported.");
   }
 
   const [imageUrl, walkingRoute] = await Promise.all([
@@ -413,6 +677,7 @@ export async function fetchGooglePlaceDetails({
     lat,
     lng,
     types,
+    primaryType,
     category,
     imageUrl,
     photoAttributions: imageUrl ? toPhotoAttributions(photo) : [],
