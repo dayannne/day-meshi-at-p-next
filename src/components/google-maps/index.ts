@@ -9,5 +9,6 @@ export type {
   GoogleMapOptions,
   GoogleMapPosition,
   GoogleMapProps,
+  GoogleMapSelectedMarkerOcclusion,
   GoogleMapStatusContent,
 } from "./types";

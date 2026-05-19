@@ -83,7 +83,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           { ...toPlaceMarker(selectedPlace), href: buildPlaceDetailHref(selectedPlace.id) },
         ]
       : placeMarkers;
-  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : undefined;
+  const selectedMarkerId = isPlaceDetailPanel ? (selectedPlace?.id ?? null) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">

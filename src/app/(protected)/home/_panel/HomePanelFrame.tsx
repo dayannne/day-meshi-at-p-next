@@ -59,7 +59,7 @@ export function HomePanelFrame({ title, closeHref, children }: HomePanelFramePro
           replace
           scroll={false}
           aria-label="Close panel"
-          className="inline-flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
+          className="mr-[-5.5px] inline-flex size-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950"
         >
           <X className="size-5" aria-hidden="true" />
         </Link>

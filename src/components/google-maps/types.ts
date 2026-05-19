@@ -34,6 +34,12 @@ export type GoogleMapStatusContent = {
   message: string;
 };
 
+export type GoogleMapSelectedMarkerOcclusion = {
+  leftPx: number;
+  topPx?: number;
+  bottomPx?: number;
+};
+
 export type GoogleMapProps = {
   apiKey: string;
   mapId: string;
@@ -43,6 +49,7 @@ export type GoogleMapProps = {
   markers?: GoogleMapMarkerItem[];
   showDefaultCenterMarker?: boolean;
   selectedMarkerId?: string | null;
+  selectedMarkerOcclusion?: GoogleMapSelectedMarkerOcclusion;
   onMarkerSelect?: (markerId: string) => void;
   defaultCenter?: GoogleMapPosition;
   defaultZoom?: number;

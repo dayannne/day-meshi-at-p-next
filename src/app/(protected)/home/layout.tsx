@@ -27,6 +27,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
                 apiKey={apiKey}
                 mapId={mapId}
                 mapInstanceId="home-google-map"
+                selectedMarkerOcclusion={{
+                  leftPx: 504,
+                  topPx: 48,
+                  bottomPx: 48,
+                }}
               />
             </div>
           </section>
