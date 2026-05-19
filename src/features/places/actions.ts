@@ -9,6 +9,7 @@ import type {
   Place,
   PlaceGoogleBusinessDetails,
   PlacePopularReviewTag,
+  PlaceReview,
   PlaceReviewPreview,
 } from "@/features/places/types";
 import { requireActiveUser } from "@/features/auth/access";
@@ -67,11 +68,37 @@ type ReviewPreviewRow = {
   rating: number;
   comment: string | null;
   created_at: string;
-  profiles: EmbeddedReviewPreviewProfile | EmbeddedReviewPreviewProfile[] | null;
+} & ReviewAuthorRow;
+
+type PlaceReviewRow = {
+  id: string;
+  user_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+} & ReviewAuthorRow;
+
+type ReviewAuthorRow = {
+  profiles: EmbeddedReviewProfile | EmbeddedReviewProfile[] | null;
 };
 
-type EmbeddedReviewPreviewProfile = {
+type EmbeddedReviewProfile = {
   nickname: string | null;
+};
+
+type ReviewTagRow = {
+  review_id: string;
+  tags: EmbeddedReviewTag | EmbeddedReviewTag[] | null;
+};
+
+type EmbeddedReviewTag = {
+  name: string | null;
+  emoji: string | null;
+};
+
+type ReviewLikeRow = {
+  review_id: string;
+  user_id: string;
 };
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
@@ -147,10 +174,21 @@ async function fetchNullableGoogleBusinessDetails(
   }
 }
 
-function getReviewPreviewAuthorName(row: ReviewPreviewRow): string {
+function getReviewAuthorName(row: ReviewAuthorRow): string {
   const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
 
   return profile?.nickname ?? "社員";
+}
+
+function getReviewTagLabel(row: ReviewTagRow): string | null {
+  const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags;
+  const name = tag?.name?.trim();
+
+  if (!name) {
+    return null;
+  }
+
+  return tag?.emoji ? `${tag.emoji} ${name}` : name;
 }
 
 export async function getPlacesAction({
@@ -296,10 +334,110 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
 
   return reviewRows.map((review) => ({
     id: review.id,
-    authorName: getReviewPreviewAuthorName(review),
+    authorName: getReviewAuthorName(review),
     rating: review.rating,
     comment: review.comment?.trim() || "コメントなし",
     date: review.created_at,
+  }));
+}
+
+export async function getPlaceReviewsAction(placeId: string): Promise<PlaceReview[]> {
+  const normalizedPlaceId = placeId.trim();
+
+  if (!normalizedPlaceId) {
+    return [];
+  }
+
+  const user = await requireActiveUser();
+  const admin = createAdminClient();
+  const { data: reviews, error: reviewsError } = await admin
+    .from("reviews")
+    .select(
+      `
+        id,
+        user_id,
+        rating,
+        comment,
+        created_at,
+        profiles!reviews_user_id_fkey (
+          nickname
+        )
+      `
+    )
+    .eq("place_id", normalizedPlaceId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
+
+  if (reviewsError) {
+    throw new Error("Failed to load place reviews.");
+  }
+
+  const reviewRows = (reviews ?? []) as PlaceReviewRow[];
+
+  if (reviewRows.length === 0) {
+    return [];
+  }
+
+  const reviewIds = reviewRows.map((review) => review.id);
+  const [reviewTagsResult, reviewLikesResult] = await Promise.all([
+    admin
+      .from("review_tags")
+      .select(
+        `
+          review_id,
+          tags!review_tags_tag_id_fkey (
+            name,
+            emoji
+          )
+        `
+      )
+      .in("review_id", reviewIds),
+    admin.from("review_likes").select("review_id, user_id").in("review_id", reviewIds),
+  ]);
+
+  if (reviewTagsResult.error) {
+    throw new Error("Failed to load review tags.");
+  }
+
+  if (reviewLikesResult.error) {
+    throw new Error("Failed to load review likes.");
+  }
+
+  const tagsByReviewId = new Map<string, string[]>();
+  const likeCountsByReviewId = new Map<string, number>();
+  const likedReviewIds = new Set<string>();
+
+  for (const reviewTag of (reviewTagsResult.data ?? []) as ReviewTagRow[]) {
+    const tagLabel = getReviewTagLabel(reviewTag);
+
+    if (!tagLabel) {
+      continue;
+    }
+
+    const tags = tagsByReviewId.get(reviewTag.review_id) ?? [];
+
+    tags.push(tagLabel);
+    tagsByReviewId.set(reviewTag.review_id, tags);
+  }
+
+  for (const like of (reviewLikesResult.data ?? []) as ReviewLikeRow[]) {
+    likeCountsByReviewId.set(like.review_id, (likeCountsByReviewId.get(like.review_id) ?? 0) + 1);
+
+    if (like.user_id === user.userId) {
+      likedReviewIds.add(like.review_id);
+    }
+  }
+
+  return reviewRows.map((review) => ({
+    id: review.id,
+    authorId: review.user_id,
+    authorName: getReviewAuthorName(review),
+    rating: review.rating,
+    comment: review.comment?.trim() || "コメントなし",
+    date: review.created_at,
+    tags: tagsByReviewId.get(review.id) ?? [],
+    initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
+    initialIsLiked: likedReviewIds.has(review.id),
   }));
 }
 

@@ -4,11 +4,13 @@ import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
+import { PlaceReviewsPanel } from "./_panel/PlaceReviewsPanel";
 import {
   buildPlacesHref,
   EXISTING_PLACE_REVIEW_PANEL,
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
+  PLACE_REVIEWS_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
 
@@ -74,6 +76,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
     panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
+  const isPlaceReviewsPanel = panelName === PLACE_REVIEWS_PANEL && Boolean(selectedPlaceId);
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
@@ -100,6 +103,12 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       panel: EXISTING_PLACE_REVIEW_PANEL,
       placeId,
     });
+  const buildPlaceReviewsHref = (placeId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+    });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
@@ -108,7 +117,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     href: placeDetailHrefs[marker.id],
   }));
   const selectedMarkerId =
-    isPlaceDetailPanel || isExistingPlaceReviewPanel ? selectedPlaceId : null;
+    isPlaceDetailPanel || isExistingPlaceReviewPanel || isPlaceReviewsPanel
+      ? selectedPlaceId
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
@@ -130,10 +141,18 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           placeId={selectedPlaceId}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
       {isExistingPlaceReviewPanel && selectedPlaceId ? (
         <ExistingPlaceReviewPanel
+          closeHref={closePanelHref}
+          detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          placeId={selectedPlaceId}
+        />
+      ) : null}
+      {isPlaceReviewsPanel && selectedPlaceId ? (
+        <PlaceReviewsPanel
           closeHref={closePanelHref}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           placeId={selectedPlaceId}

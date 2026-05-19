@@ -13,7 +13,7 @@ interface ReviewDetailProps {
   name?: string; // shop-detailモードの時はユーザー名
   place?: string; // my-reviewモードの時は店名
   rating: number;
-  date: Date;
+  date: Date | string;
   comment: string;
   tags: string[];
 

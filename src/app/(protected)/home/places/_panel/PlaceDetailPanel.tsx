@@ -28,6 +28,7 @@ type PlaceDetailPanelProps = {
   // 지도 마커 클릭/선택 상태와 상세 패널 URL을 맞추기 위한 href.
   detailHref: string;
   reviewHref: string;
+  reviewsHref: string;
 };
 
 function normalizeAttributionUrl(uri: string | null) {
@@ -166,14 +167,22 @@ function PopularReviewTagsSection({
   );
 }
 
-function ReviewPreviewsSection({ reviews }: { reviews: PlaceReviewPreview[] }) {
-  // 상세 패널 안의 리뷰 미리보기 영역. 전체 리뷰 이동 버튼은 아직 비활성 상태다.
+function ReviewPreviewsSection({
+  reviews,
+  reviewsHref,
+}: {
+  reviews: PlaceReviewPreview[];
+  reviewsHref: string;
+}) {
+  // 상세 패널 안의 리뷰 미리보기 영역. 전체 리뷰 이동 버튼은 전체 리뷰 패널로 연결한다.
   return (
     <section className="border-t border-slate-200 pt-4">
       <div className="flex items-center justify-between gap-3">
         <h5 className="text-sm font-bold text-slate-950">社員レビュー</h5>
-        <Button type="button" variant="ghost" size="sm" disabled className="h-8 px-2 text-xs">
-          全てのレビュー
+        <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+          <Link href={reviewsHref} scroll={false}>
+            全てのレビュー
+          </Link>
         </Button>
       </div>
 
@@ -257,9 +266,11 @@ function PlaceNotFound({ placeId }: { placeId: string }) {
 async function PlaceDetailExtras({
   category,
   placeId,
+  reviewsHref,
 }: {
   category: string | null;
   placeId: string;
+  reviewsHref: string;
 }) {
   // 부가 정보는 기본 장소 표시 이후 병렬로 로드해서 패널 첫 표시를 막지 않는다.
   const [googleBusinessDetails, popularReviewTags, reviewPreviews] = await Promise.all([
@@ -272,7 +283,7 @@ async function PlaceDetailExtras({
     <>
       <BusinessInfoSection details={googleBusinessDetails} />
       <PopularReviewTagsSection category={category} tags={popularReviewTags} />
-      <ReviewPreviewsSection reviews={reviewPreviews} />
+      <ReviewPreviewsSection reviews={reviewPreviews} reviewsHref={reviewsHref} />
     </>
   );
 }
@@ -281,10 +292,12 @@ async function PlaceDetailBody({
   placeId,
   detailHref,
   reviewHref,
+  reviewsHref,
 }: {
   placeId: string;
   detailHref: string;
   reviewHref: string;
+  reviewsHref: string;
 }) {
   // 첫 화면에 필요한 기본 장소 데이터만 여기서 로드한다.
   const place = await getPlaceAction(placeId);
@@ -337,7 +350,11 @@ async function PlaceDetailBody({
           </Button>
 
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
-            <PlaceDetailExtras category={place.category} placeId={place.id} />
+            <PlaceDetailExtras
+              category={place.category}
+              placeId={place.id}
+              reviewsHref={reviewsHref}
+            />
           </Suspense>
         </div>
       </div>
@@ -350,12 +367,18 @@ export function PlaceDetailPanel({
   placeId,
   detailHref,
   reviewHref,
+  reviewsHref,
 }: PlaceDetailPanelProps) {
   return (
     <HomePanelFrame title="お店詳細" closeHref={closeHref}>
       {/* 장소 전환 시 이전 상세 내용이 남지 않도록 placeId를 Suspense key로 사용한다. */}
       <Suspense key={placeId} fallback={<PlaceDetailLoading />}>
-        <PlaceDetailBody placeId={placeId} detailHref={detailHref} reviewHref={reviewHref} />
+        <PlaceDetailBody
+          placeId={placeId}
+          detailHref={detailHref}
+          reviewHref={reviewHref}
+          reviewsHref={reviewsHref}
+        />
       </Suspense>
     </HomePanelFrame>
   );
