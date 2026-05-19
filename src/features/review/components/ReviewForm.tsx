@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Search, MapPin } from "lucide-react";
+import { LoaderCircle, Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -16,19 +16,21 @@ import type { TagGroup } from "@/features/tag/types";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
 
-import { useReviewForm } from "../hooks/useReviewForm";
-
-interface PlaceInfo {
-  id?: string;
-  name: string;
-  address: string;
-}
+import {
+  useReviewForm,
+  type ReviewFormMode,
+  type ReviewFormPlaceInfo,
+} from "../hooks/useReviewForm";
 
 interface ReviewFormProps {
-  place?: PlaceInfo;
+  mode: ReviewFormMode;
+  place?: ReviewFormPlaceInfo;
   tagGroups?: TagGroup[];
   onClose: () => void;
+  onSuccess: (placeId: string) => void;
+  onExistingPlaceMatch?: (place: ExistingReviewPlaceMatch) => void;
 }
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -104,9 +106,51 @@ function PhotoAttributions({ attributions }: { attributions: GooglePlacePhotoAtt
   );
 }
 
-export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
-  const { state, handlers } = useReviewForm(place, tagGroups);
-  const isNewShop = !place;
+function ExistingPlaceMatchPrompt({
+  place,
+  onConfirm,
+  onCancel,
+}: {
+  place: ExistingReviewPlaceMatch;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <div className="space-y-1">
+        <p className="text-sm font-bold text-slate-950">
+          このお店はすでに登録されています。既存のお店にレビューを書きますか？
+        </p>
+        <p className="text-sm text-slate-600">{place.name}</p>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" size="sm" className="h-9 flex-1" onClick={onConfirm}>
+          レビューを書く
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="h-9 flex-1" onClick={onCancel}>
+          別のお店を探す
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function ReviewForm({
+  mode,
+  place,
+  tagGroups,
+  onClose,
+  onSuccess,
+  onExistingPlaceMatch,
+}: ReviewFormProps) {
+  const { state, handlers } = useReviewForm({
+    mode,
+    place,
+    tagGroups,
+    onExistingPlaceMatch,
+  });
+  const isNewShop = mode === "new-place";
+  const isPlaceSearchLoading = state.isSearchingPlaces || state.isLoadingPlaceDetails;
   const showSuggestions = isNewShop && state.placeSuggestions.length > 0;
   const showEmptyPlaceResult =
     isNewShop &&
@@ -124,7 +168,17 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
         {isNewShop && (
           <div className="space-y-2">
             <div className="relative">
-              <Search className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              {isPlaceSearchLoading ? (
+                <LoaderCircle
+                  className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400"
+                  aria-label="読み込み中"
+                />
+              ) : (
+                <Search
+                  className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400"
+                  aria-hidden="true"
+                />
+              )}
               <Input
                 placeholder="お店を検索..."
                 value={state.placeSearchInput}
@@ -133,9 +187,6 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
                 className="border-slate-300 pl-10 placeholder:text-slate-950"
               />
             </div>
-            {state.isSearchingPlaces && (
-              <p className="text-sm font-medium text-slate-500">候補を検索中...</p>
-            )}
             {state.placeSearchError && (
               <p className="text-sm font-medium text-red-500">{state.placeSearchError}</p>
             )}
@@ -174,11 +225,15 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
                 })}
               </ul>
             )}
-            {state.isLoadingPlaceDetails && (
-              <p className="text-sm font-medium text-slate-500">お店の詳細を取得中...</p>
-            )}
             {state.placeDetailsError && (
               <p className="text-sm font-medium text-red-500">{state.placeDetailsError}</p>
+            )}
+            {state.existingPlaceMatch && (
+              <ExistingPlaceMatchPrompt
+                place={state.existingPlaceMatch}
+                onConfirm={handlers.confirmExistingPlaceMatch}
+                onCancel={handlers.clearSelectedPlaceForSearch}
+              />
             )}
             {state.errors.place && (
               <p className="text-destructive text-sm font-medium text-red-500">
@@ -309,8 +364,8 @@ export function ReviewForm({ place, tagGroups, onClose }: ReviewFormProps) {
         </Button>
         <Button
           className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
-          disabled={state.isPending}
-          onClick={() => handlers.onSubmit(onClose)}
+          disabled={state.isSubmitDisabled}
+          onClick={() => handlers.onSubmit(onSuccess)}
         >
           {state.isPending ? "送信中..." : "レビューを投稿する"}
         </Button>
