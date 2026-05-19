@@ -1,13 +1,6 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-
 import { MapMarkersSync } from "@/components/google-maps";
-import { Button } from "@/components/ui/Button";
 import { getPlacesAction } from "@/features/places/actions";
-import { PlacesList } from "@/features/places/components/PlacesList";
-import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-
 import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
@@ -17,6 +10,7 @@ import {
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
 } from "./_panel/panelLinks";
+import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -27,6 +21,8 @@ type ExplorePageProps = {
     page?: SearchParamValue;
     panel?: SearchParamValue;
     placeId?: SearchParamValue;
+    rating?: SearchParamValue;
+    price?: SearchParamValue;
   }>;
 };
 
@@ -81,28 +77,16 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     isPlaceDetailPanel || isExistingPlaceReviewPanel ? selectedPlaceId : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden not-italic">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       <MapMarkersSync source="places" markers={placeMarkers} selectedMarkerId={selectedMarkerId} />
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-slate-950">お店を検索</h2>
-        <Button asChild size="sm" className="gap-2">
-          <Link href={newPlaceReviewHref} scroll={false}>
-            <Plus className="size-4" aria-hidden="true" />
-            新しいレビュー
-          </Link>
-        </Button>
-      </div>
-      {/* <SearchFilterBar /> */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <p className="mt-1 text-sm text-slate-500">お店一覧 ({pagination.totalCount}件)</p>
-        <PlacesList places={places} placeDetailHrefs={placeDetailHrefs} />
+        <ExploreLeftPanel
+          places={places}
+          pagination={pagination}
+          newPlaceReviewHref={newPlaceReviewHref}
+          placeDetailHrefs={placeDetailHrefs} // 一覧のリンク用
+        />
       </div>
-      <PlacesPagination
-        currentPage={pagination.page}
-        totalPages={pagination.totalPages}
-        hasPreviousPage={pagination.hasPreviousPage}
-        hasNextPage={pagination.hasNextPage}
-      />
       {isNewPlaceReviewPanel ? <NewPlaceReviewPanel closeHref={closePanelHref} /> : null}
       {isPlaceDetailPanel && selectedPlaceId ? (
         <PlaceDetailPanel

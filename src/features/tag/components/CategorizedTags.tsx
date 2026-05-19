@@ -7,7 +7,15 @@ import { Tag } from "../types";
 interface CategorizedTagsProps {
   categoryName: string;
   tags: Tag[];
-  variant?: "primary" | "secondary" | "tertiary" | "neutral";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "neutral"
+    | "primary_outline"
+    | "secondary_outline"
+    | "tertiary_outline"
+    | "neutral_outline";
   selectedTags?: Tag[];
   onTagToggle?: (tagName: Tag) => void;
 }
@@ -24,6 +32,10 @@ export const CategorizedTags = ({
     secondary: "bg-secondary",
     tertiary: "bg-tertiary",
     neutral: "bg-neutral",
+    primary_outline: "bg-primary",
+    secondary_outline: "bg-secondary",
+    tertiary_outline: "bg-tertiary",
+    neutral_outline: "bg-neutral",
   };
   return (
     <div className="flex flex-col gap-2">
