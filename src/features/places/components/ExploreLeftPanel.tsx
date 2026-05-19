@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, Plus, Search, Star } from "lucide-react";
 import { PlaceList } from "@/features/places/components/PlaceList";
-import { PlacesPagination } from "@/features/places/components/PlacesPagination";
 import { FilterList } from "./FilterList";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -12,6 +11,7 @@ import type { Place } from "@/features/places/types";
 import { TagButton } from "@/components/ui/TagButton";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useFilterNavigation } from "../hooks/useFilterNavigation";
+import { Paginator } from "@/components/ui/Paginator";
 
 // 価格帯の表示ラベル用マスター
 const PRICE_LEVELS = [
@@ -199,12 +199,7 @@ export function ExploreLeftPanel({
               <PlaceList places={places} placeDetailHrefs={placeDetailHrefs} />
             </div>
           </div>
-          <PlacesPagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            hasPreviousPage={pagination.hasPreviousPage}
-            hasNextPage={pagination.hasNextPage}
-          />
+          <Paginator pagination={pagination} baseUrl="/home/places" />
         </>
       )}
     </div>
