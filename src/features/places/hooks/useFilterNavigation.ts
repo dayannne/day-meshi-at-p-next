@@ -26,6 +26,7 @@ export const useFilterNavigation = () => {
   const searchParams = useSearchParams();
 
   // URLから値を取るロジック
+  const keyword = searchParams.get("keyword") || "";
   const rating = Number(searchParams.get("rating")) || 0;
   const price = searchParams.get("price") ? Number(searchParams.get("price")) : null;
   const isGochimeshi = searchParams.get("gotimeshi") === "true";
@@ -37,6 +38,15 @@ export const useFilterNavigation = () => {
   // URLを更新する共通のヘルパー
   const updateURL = (params: URLSearchParams) => {
     router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  const searchByKeyword = (keyword: string) => {
+    const trimmed = keyword.trim();
+    if (trimmed) {
+      router.push(`?page=1&keyword=${encodeURIComponent(trimmed)}`);
+    } else {
+      router.push("?page=1");
+    }
   };
 
   // 2. 各更新関数
@@ -116,6 +126,7 @@ export const useFilterNavigation = () => {
   const selectedTags = flatTags.filter((tag) => selectedTagIds.includes(tag.id));
 
   return {
+    keyword,
     rating,
     price,
     isGochimeshi,
@@ -123,6 +134,7 @@ export const useFilterNavigation = () => {
     tagGroups,
     selectedTags,
     isTagsLoading,
+    searchByKeyword,
     setRating,
     setPrice,
     toggleCategorySelection,

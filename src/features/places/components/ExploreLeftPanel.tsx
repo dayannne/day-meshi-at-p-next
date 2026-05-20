@@ -60,11 +60,13 @@ export function ExploreLeftPanel({
   const [activeView, setActiveView] = useState<"list" | "filter">("list");
 
   const {
+    keyword,
     rating,
     price,
     selectedCategories,
     isGochimeshi,
     selectedTags,
+    searchByKeyword,
     setRating,
     setPrice,
     toggleCategorySelection,
@@ -77,6 +79,29 @@ export function ExploreLeftPanel({
   // 表示判定用のフラグ（カテゴリー配列に中身があるかチェック）
   const hasActiveFilters =
     price !== null || rating > 0 || selectedCategories.length > 0 || selectedTags.length > 0;
+
+  const [inputValue, setInputValue] = useState(keyword);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    // 💡 文字が「完全に消しきられた（空になった）」ら、Enterを待たずに即座に全リセット！
+    if (value.trim() === "") {
+      searchByKeyword("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      searchByKeyword(e.currentTarget.value);
+    }
+  };
+
+  const handleClear = () => {
+    setInputValue(""); // 入力欄を白紙に戻す
+    searchByKeyword(""); // URLも完全に初期状態へリセット！
+  };
 
   const activeBadges = [
     // 星評価（レート）
@@ -159,13 +184,27 @@ export function ExploreLeftPanel({
           </h1>
         </div>
 
-        <div className="relative">
+        <div className="relative" key={keyword}>
           <Search className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <Input
+            type="text"
             placeholder="お店を検索..."
             autoComplete="off"
+            defaultValue={keyword}
+            onKeyDown={handleKeyDown}
+            onChange={handleChange}
             className="border-slate-300 py-2 pr-4 pl-10 placeholder:text-slate-950"
           />
+          {inputValue && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+              style={{ cursor: "pointer" }}
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
