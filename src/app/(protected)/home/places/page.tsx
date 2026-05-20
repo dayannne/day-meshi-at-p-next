@@ -23,7 +23,27 @@ type ExplorePageProps = {
     placeId?: SearchParamValue;
     rating?: SearchParamValue;
     price?: SearchParamValue;
+    category?: SearchParamValue;
+    tags?: SearchParamValue;
+    gotimeshi?: SearchParamValue;
   }>;
+};
+
+const GOOGLE_PLACE_CATEGORIES = {
+  CAFE: "カフェ",
+  SUSHI: "寿司",
+  RAMEN: "ラーメン",
+  CHINESE: "中華",
+  CURRY: "カレー",
+  IZAKAYA: "居酒屋",
+  SWEETS: "スイーツ",
+  BAR: "バー",
+  JAPANESE: "和食",
+  YAKINIKU: "焼肉",
+  WESTERN: "洋食",
+  FAST_FOOD: "ファストフード",
+  ASIAN: "アジア",
+  OTHERS: "その他",
 };
 
 function getFirstParam(value: SearchParamValue): string | undefined {
@@ -37,10 +57,19 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId } = await searchParams;
+  const { page, panel, placeId, rating, price, category, tags, gotimeshi } = await searchParams;
   const requestedPage = parsePageParam(page);
   const panelName = getFirstParam(panel);
   const selectedPlaceId = getFirstParam(placeId);
+  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+  const filterPrice = price ? Number(getFirstParam(price)) : null;
+  const categories = Array.isArray(category) ? category : category ? [category] : [];
+  const filterCategories = categories.map(
+    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+  );
+  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
+
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
@@ -48,6 +77,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
+    rating: filterRating,
+    price: filterPrice,
+    categories: filterCategories,
+    tags: filterTags,
+    isGochimeshi: isGochimeshiSelected,
   });
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({
