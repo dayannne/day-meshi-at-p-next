@@ -59,7 +59,7 @@ export const MyReviewCard = ({
       </div>
 
       {/* 3行制限のコメント */}
-      <p className={`wrab-break-words line-clamp-1 text-xs leading-relaxed text-slate-700`}>
+      <p className="line-clamp-1 text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700">
         {comment}
       </p>
 

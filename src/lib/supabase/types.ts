@@ -357,6 +357,44 @@ export type Database = {
           tags: Json;
         }[];
       };
+      create_review_for_existing_place_transaction: {
+        Args: {
+          p_user_id: string;
+          p_place_id: string;
+          p_rating: number;
+          p_price_range: number | null;
+          p_comment: string;
+          p_visited_at: string | null;
+          p_tag_ids: string[];
+        };
+        Returns: {
+          place_id: string;
+          review_id: string;
+        }[];
+      };
+      create_review_with_place_transaction: {
+        Args: {
+          p_user_id: string;
+          p_google_place_id: string;
+          p_name: string;
+          p_category: string;
+          p_lat: number;
+          p_lng: number;
+          p_rating: number;
+          p_price_range: number | null;
+          p_comment: string;
+          p_visited_at: string | null;
+          p_tag_ids: string[];
+          p_image_url: string | null;
+          p_photo_attributions: Json;
+          p_distance_from_office_meters: number | null;
+          p_walking_duration_seconds: number | null;
+        };
+        Returns: {
+          place_id: string;
+          review_id: string;
+        }[];
+      };
       get_place_popular_review_tags: {
         Args: {
           p_place_id: string;

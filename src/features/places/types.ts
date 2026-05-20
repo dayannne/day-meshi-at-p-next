@@ -15,6 +15,8 @@ export type Place = {
   reviewCount: number;
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
+  isBookmarked: boolean;
+  bookmarkCount: number;
 };
 
 export type PlacePopularReviewTag = {
@@ -31,6 +33,20 @@ export type PlaceReviewPreview = {
   rating: number;
   comment: string;
   date: string;
+};
+
+export type PlaceReview = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  rating: number;
+  priceRange: number | null;
+  comment: string;
+  date: string;
+  visitDate: string | null;
+  tags: string[];
+  initialLikeCount: number;
+  initialIsLiked: boolean;
 };
 
 export type PlaceGoogleBusinessStatus =

@@ -1,17 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
-import { SlidersHorizontal, Plus, Search, Star } from "lucide-react";
+import { SlidersHorizontal, Search, Star } from "lucide-react";
 import { PlaceList } from "@/features/places/components/PlaceList";
 import { FilterList } from "./FilterList";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Place } from "@/features/places/types";
 import { TagButton } from "@/components/ui/TagButton";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useFilterNavigation } from "../hooks/useFilterNavigation";
 import { Paginator } from "@/components/ui/Paginator";
+import { RotateCcw } from "lucide-react";
 
 // 価格帯の表示ラベル用マスター
 const PRICE_LEVELS = [
@@ -51,20 +50,17 @@ interface ExploreLeftPanelProps {
   placeDetailHrefs: Record<string, string>;
 }
 
-export function ExploreLeftPanel({
-  places,
-  pagination,
-  newPlaceReviewHref,
-  placeDetailHrefs,
-}: ExploreLeftPanelProps) {
+export function ExploreLeftPanel({ places, pagination, placeDetailHrefs }: ExploreLeftPanelProps) {
   const [activeView, setActiveView] = useState<"list" | "filter">("list");
 
   const {
+    keyword,
     rating,
     price,
     selectedCategories,
     isGochimeshi,
     selectedTags,
+    searchByKeyword,
     setRating,
     setPrice,
     toggleCategorySelection,
@@ -78,6 +74,95 @@ export function ExploreLeftPanel({
   const hasActiveFilters =
     price !== null || rating > 0 || selectedCategories.length > 0 || selectedTags.length > 0;
 
+  const [inputValue, setInputValue] = useState(keyword);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      searchByKeyword(e.currentTarget.value);
+    }
+  };
+
+  const handleClear = () => {
+    setInputValue(""); // 入力欄を白紙に戻す
+    searchByKeyword(""); // URLも完全に初期状態へリセット！
+  };
+
+  const activeBadges = [
+    // 星評価（レート）
+    ...(rating > 0
+      ? [
+          {
+            id: "filter-rating",
+            tagColor: "secondary_outline" as const,
+            onClick: () => setRating(0),
+            content: (
+              <>
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                <span>{rating}.0 〜</span>
+              </>
+            ),
+          },
+        ]
+      : []),
+
+    // 価格帯
+    ...(price !== null && currentPriceLevel
+      ? [
+          {
+            id: "filter-price",
+            tagColor: "neutral" as const,
+            onClick: () => setPrice(null),
+            content: <span>{currentPriceLevel.label}</span>,
+          },
+        ]
+      : []),
+
+    // カテゴリー（複数）
+    ...selectedCategories.map((catKey) => ({
+      id: `filter-cat-${catKey}`,
+      tagColor: "primary" as const,
+      onClick: () => toggleCategorySelection(catKey),
+      content: <span>{GOOGLE_PLACE_CATEGORIES[catKey]}</span>,
+    })),
+
+    // カスタムタグ（複数）
+    ...selectedTags.map((tag) => {
+      const tagColorMap: Record<
+        string,
+        | "primary"
+        | "secondary"
+        | "tertiary"
+        | "neutral"
+        | "primary_outline"
+        | "secondary_outline"
+        | "tertiary_outline"
+        | "neutral_outline"
+      > = {
+        "95731a4f-8b6c-4272-a218-0a3515e10c02": "secondary",
+        "78fb8ac4-8ec6-4f56-b59a-6739614be5c4": "tertiary",
+        "a93848dc-14bf-434e-a84f-4d11b2a7b527": "neutral",
+      };
+      const determinedColor = tag.categoryId ? tagColorMap[tag.categoryId] : "neutral";
+
+      return {
+        id: `filter-tag-${tag.id}`,
+        tagColor: determinedColor || "neutral",
+        onClick: () => toggleTagSelection(tag),
+        content: (
+          <>
+            {tag.emoji && <span className="mr-0.5">{tag.emoji}</span>}
+            <span>{tag.name}</span>
+          </>
+        ),
+      };
+    }),
+  ];
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-white">
       {/* タイトルと検索バー・ボタン */}
@@ -86,36 +171,42 @@ export function ExploreLeftPanel({
           <h1 className="bg-primary-linear bg-clip-text text-4xl font-black text-transparent">
             Meshi At Play
           </h1>
-          <Button asChild size="sm" className="gap-2">
-            <Link href={newPlaceReviewHref} scroll={false}>
-              <Plus className="size-4" aria-hidden="true" />
-              新しいレビュー
-            </Link>
-          </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="お店を検索..."
-            autoComplete="off"
-            className="border-slate-300 py-2 pr-4 pl-10 placeholder:text-slate-950"
-          />
+        <div className="flex w-full items-center gap-2">
+          <div className="relative flex-1" key={keyword}>
+            <Search className="absolute top-1/2 left-3 z-5 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="お店を検索..."
+              autoComplete="off"
+              defaultValue={keyword}
+              onKeyDown={handleKeyDown}
+              onChange={handleChange}
+              className="border-slate-300 py-2 pr-4 pl-10 placeholder:text-slate-950"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="flex items-center justify-center rounded-lg p-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-gray-700"
+            title="検索をクリア"
+            style={{ cursor: "pointer" }}
+          >
+            <RotateCcw className="h-5 w-5" />
+          </button>
         </div>
       </div>
-
       {/* フィルターヘッダー */}
       <div
         onClick={() => setActiveView(activeView === "list" ? "filter" : "list")}
         className="flex cursor-pointer flex-row items-center justify-between border-b border-slate-200 bg-white p-4 transition-colors duration-150 select-none hover:bg-slate-50"
       >
-        {/* 左側：アイコンと「フィルター」の文言 */}
         <div className="flex flex-row items-center gap-3">
           <SlidersHorizontal className="text-primary h-5 w-5" />
           <span className="text-sm font-bold text-slate-950">フィルター</span>
         </div>
 
-        {/* 右側：ボタンタグを廃止し、クリック領域を邪魔しないテキスト（span）に変更 */}
         <span className="flex h-auto w-16 shrink-0 items-center justify-end p-0 text-sm font-medium text-slate-500">
           {activeView === "list" ? "開く" : "閉じる"}
         </span>
@@ -135,57 +226,17 @@ export function ExploreLeftPanel({
             ごちめし利用可
           </label>
         </div>
-
-        {/* 動的バッジ表示エリア */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 pt-1">
-            {/* 1. 価格帯 */}
-            {price !== null && currentPriceLevel && (
-              <TagButton onClick={() => setPrice(null)} tagColor={"neutral"}>
-                <span>{currentPriceLevel.label}</span>
-                <span className="text-neutral ml-1 font-bold">×</span>
-              </TagButton>
-            )}
-
-            {/* 2. カテゴリー */}
-            {selectedCategories.map((catKey) => {
-              const label = GOOGLE_PLACE_CATEGORIES[catKey];
-              return (
-                <TagButton
-                  key={catKey}
-                  tagColor={"primary"}
-                  onClick={() => toggleCategorySelection(catKey)}
-                >
-                  <span>{label}</span>
-                  <span className="ml-1 font-bold text-slate-400 hover:text-slate-600">×</span>
-                </TagButton>
-              );
-            })}
-
-            {/* 3. 星評価（レート） */}
-            {rating > 0 && (
-              <TagButton
-                onClick={() => setRating(0)}
-                className="flex cursor-pointer items-center gap-1 border-yellow-200 bg-yellow-50 text-yellow-700"
-              >
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                <span>{rating}.0 〜</span>
-                <span className="ml-1 font-bold text-yellow-400 hover:text-yellow-600">×</span>
-              </TagButton>
-            )}
-
-            {/* 4. タグ */}
-            {selectedTags.map((tag) => (
-              <TagButton key={tag.id} tagColor={"neutral"} onClick={() => toggleTagSelection(tag)}>
-                {tag.emoji && <span className="mr-0.5">{tag.emoji}</span>}
-                <span>{tag.name}</span>
-                <span className="text-primary ml-1 font-bold">×</span>
+            {activeBadges.map((badge) => (
+              <TagButton key={badge.id} tagColor={badge.tagColor} onClick={badge.onClick}>
+                {badge.content}
+                <span className="ml-1 font-bold text-slate-400">×</span>
               </TagButton>
             ))}
           </div>
         )}
       </div>
-
       {/* 動的コンテンツエリア */}
       {activeView === "filter" ? (
         <div className="flex-1 overflow-y-auto p-5">

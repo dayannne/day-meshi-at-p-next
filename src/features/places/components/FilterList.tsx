@@ -4,6 +4,7 @@ import React from "react";
 import { Star } from "lucide-react";
 import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
 import { PriceSelector } from "@/features/review/components/PriceSelector";
+import { StarRating } from "@/features/review/components/StarRating";
 import { useFilterNavigation } from "../hooks/useFilterNavigation";
 import { TagButton } from "@/components/ui/TagButton";
 
@@ -70,21 +71,18 @@ export function FilterList({ onClose }: FilterListProps) {
     <div className="flex flex-col space-y-4 pt-2">
       {/*  評価（レート） */}
       <div className="space-y-2">
-        <label className="border-l-4 border-slate-950 pl-2 text-sm font-bold">評価</label>
-        <div className="flex gap-1 pt-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              className={`h-8 w-8 cursor-pointer transition-all ${
-                star <= rating ? "fill-yellow-400 text-yellow-400" : "text-slate-200"
-              }`}
-              onClick={() => setRating(star)}
-            />
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="bg-secondary h-5 w-1.5 rounded-full" /> {/* 縦線 */}
+          <h3 className="text-sm text-slate-950">レート</h3>
+        </div>
+        <div className="flex items-center gap-1 pt-1">
+          <StarRating rating={rating} size={32} onSelect={(star) => setRating(star)} />
+
           {rating > 0 && (
             <button
+              type="button"
               onClick={() => setRating(0)}
-              className="ml-2 text-xs text-slate-400 underline hover:text-slate-600"
+              className="ml-2 cursor-pointer text-xs text-slate-400 underline hover:text-slate-600"
             >
               クリア
             </button>
@@ -98,7 +96,10 @@ export function FilterList({ onClose }: FilterListProps) {
       </div>
 
       <div className="space-y-2">
-        <label className="border-l-4 border-slate-950 pl-2 text-sm font-bold">カテゴリー</label>
+        <div className="flex items-center gap-2">
+          <div className="bg-primary h-5 w-1.5 rounded-full" /> {/* 縦線 */}
+          <h3 className="text-sm text-slate-950">カテゴリ</h3>
+        </div>
         <div className="flex flex-wrap gap-2 pt-1">
           {(Object.keys(GOOGLE_PLACE_CATEGORIES) as GooglePlaceCategoryKey[]).map((key) => {
             const label = GOOGLE_PLACE_CATEGORIES[key];

@@ -1,3 +1,4 @@
+import { PRICE_LEVELS } from "@/components/google-maps/constants";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -24,3 +25,10 @@ export function getWalkingDurationMinutes(
 
   return Math.round(durationSeconds / 60);
 }
+
+export const getPriceRangeLabel = (price_range: number | null | undefined): string => {
+  if (!price_range) return "未設定"; // 値がない場合のデフォルト
+
+  const item = PRICE_LEVELS.find((p) => p.value === price_range);
+  return item ? item.label : "不明"; // 該当なしの場合のフォールバック
+};

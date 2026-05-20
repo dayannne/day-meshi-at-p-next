@@ -29,10 +29,16 @@ export interface ReviewFormPlaceInfo {
   types?: string[];
   primaryType?: string | null;
   category?: string | null;
+  price_range?: number | null;
   imageUrl?: string | null;
   photoAttributions?: GooglePlacePhotoAttribution[];
+  isGochimeshi?: boolean;
+  avgRating?: number;
+  reviewCount?: number;
   distanceFromOfficeMeters?: number | null;
   walkingDurationSeconds?: number | null;
+  isBookmarked?: boolean;
+  bookmarkCount?: number;
 }
 
 type SelectedPlaceInfo = SignedGooglePlaceDetails;
@@ -87,6 +93,7 @@ export function useReviewForm({
   const clearMapMarkers = useMapMarkerStore((state) => state.clearMarkers);
   const selectMapMarker = useMapMarkerStore((state) => state.selectMarker);
   const placeDetailsAbortRef = useRef<AbortController | null>(null);
+  const isSubmittingRef = useRef(false);
   const isNewPlaceMode = mode === "new-place";
   const [selectedPlace, setSelectedPlace] = useState<
     ReviewFormPlaceInfo | SelectedPlaceInfo | undefined
@@ -102,6 +109,7 @@ export function useReviewForm({
   const [comment, setComment] = useState("");
   const [visitDate, setVisitDate] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [validationAttemptCount, setValidationAttemptCount] = useState(0);
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const { selectedTags, handleTagToggle } = useTagSelection();
   const [isPending, setIsPending] = useState(false);
@@ -314,7 +322,13 @@ export function useReviewForm({
     if (priceRange === null) newErrors.priceRange = "価格帯を選択してください。";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+
+    if (!isValid) {
+      setValidationAttemptCount((count) => count + 1);
+    }
+
+    return isValid;
   };
 
   const confirmExistingPlaceMatch = () => {
@@ -326,9 +340,15 @@ export function useReviewForm({
   };
 
   const onSubmit = async (onSuccess: (placeId: string) => void) => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     if (!validate()) return;
 
+    isSubmittingRef.current = true;
     setIsPending(true);
+    let shouldReleaseSubmitLock = true;
 
     try {
       const reviewInput = {
@@ -383,13 +403,17 @@ export function useReviewForm({
       }
 
       onSuccess(result.placeId);
+      shouldReleaseSubmitLock = false;
     } catch {
       setErrors((currentErrors) => ({
         ...currentErrors,
         submit: "レビューの投稿に失敗しました。",
       }));
     } finally {
-      setIsPending(false);
+      if (shouldReleaseSubmitLock) {
+        isSubmittingRef.current = false;
+        setIsPending(false);
+      }
     }
   };
 
@@ -406,6 +430,7 @@ export function useReviewForm({
       comment,
       visitDate,
       errors,
+      validationAttemptCount,
       selectedTags,
       priceRange,
       groupedTags: tagGroups,

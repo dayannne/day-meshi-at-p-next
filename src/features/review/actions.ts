@@ -6,11 +6,11 @@ import { requireActiveUser } from "@/features/auth/access";
 import {
   getGooglePlaceCategory,
   verifyGooglePlaceSelection,
-  type GooglePlaceDetails,
   type SignedGooglePlaceDetails,
 } from "@/features/places/googlePlaces";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/types";
 
 export type SelectedReviewPlaceInput = SignedGooglePlaceDetails;
 
@@ -61,6 +61,39 @@ export type FindPlaceIdByGooglePlaceIdResult =
       error: string;
     };
 
+export async function toggleReviewLikeAction(reviewId: string, shouldLike: boolean): Promise<void> {
+  const user = await requireActiveUser();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedReviewId) {
+    throw new Error("レビューが見つかりませんでした。");
+  }
+
+  const supabase = await createClient();
+  const { error } = shouldLike
+    ? await supabase.from("review_likes").upsert(
+        {
+          user_id: user.userId,
+          review_id: normalizedReviewId,
+        },
+        {
+          onConflict: "user_id,review_id",
+          ignoreDuplicates: true,
+        }
+      )
+    : await supabase
+        .from("review_likes")
+        .delete()
+        .eq("user_id", user.userId)
+        .eq("review_id", normalizedReviewId);
+
+  if (error) {
+    throw new Error("いいねの更新に失敗しました。");
+  }
+
+  revalidatePath("/home/places");
+}
+
 function isRating(value: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= 5;
 }
@@ -94,70 +127,71 @@ function normalizeVisitDate(value: string | null): string | null {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-async function upsertPlaceFromGoogleDetails(details: GooglePlaceDetails): Promise<string> {
-  const admin = createAdminClient();
-  const { data: place, error } = await admin
-    .from("places")
-    .upsert(
-      {
-        google_place_id: details.googlePlaceId,
-        name: details.name,
-        category: details.category,
-        lat: details.lat,
-        lng: details.lng,
-        image_url: details.imageUrl,
-        photo_attributions: details.photoAttributions,
-        distance_from_office_meters: details.distanceFromOfficeMeters,
-        walking_duration_seconds: details.walkingDurationSeconds,
-      },
-      {
-        onConflict: "google_place_id",
-      }
-    )
-    .select("id")
-    .single();
+const REVIEW_SUBMISSION_ERROR = "レビューの投稿に失敗しました。";
+const PLACE_NOT_FOUND_ERROR = "お店が見つかりませんでした。";
 
-  if (error) {
-    throw new Error("Failed to save place.");
+type ReviewSubmissionRpcRow = {
+  place_id: string;
+  review_id: string;
+};
+
+type ReviewSubmissionRpcError = {
+  code?: string;
+};
+
+class ReviewSubmissionError extends Error {
+  constructor(message = REVIEW_SUBMISSION_ERROR) {
+    super(message);
+    this.name = "ReviewSubmissionError";
   }
-
-  return place.id;
 }
 
-async function refreshPlaceRating(placeId: string) {
-  const admin = createAdminClient();
-  const { data: reviews, error: reviewsError } = await admin
-    .from("reviews")
-    .select("rating")
-    .eq("place_id", placeId);
+function normalizeTagIds(tagIds: string[]): string[] {
+  return Array.from(new Set(tagIds.map((tagId) => tagId.trim()).filter(Boolean)));
+}
 
-  if (reviewsError) {
-    throw new Error("Failed to recalculate place rating.");
-  }
-
-  const reviewCount = reviews.length;
-  const avgRating =
-    reviewCount === 0
-      ? 0
-      : Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(2));
-
-  const { error: placeError } = await admin
-    .from("places")
-    .update({
-      avg_rating: avgRating,
-      review_count: reviewCount,
+function toPhotoAttributionsJson(
+  photoAttributions: SelectedReviewPlaceInput["photoAttributions"]
+): Json {
+  return photoAttributions.map(
+    (attribution): Json => ({
+      displayName: attribution.displayName,
+      uri: attribution.uri,
+      photoUri: attribution.photoUri,
     })
-    .eq("id", placeId);
-
-  if (placeError) {
-    throw new Error("Failed to update place rating.");
-  }
+  );
 }
 
-async function deleteReview(reviewId: string) {
-  const supabase = await createClient();
+function getReviewSubmissionErrorMessage(error: ReviewSubmissionRpcError | null): string {
+  if (error?.code === "P0002") {
+    return PLACE_NOT_FOUND_ERROR;
+  }
 
-  await supabase.from("reviews").delete().eq("id", reviewId);
+  return REVIEW_SUBMISSION_ERROR;
+}
+
+function toReviewSubmissionResult(
+  data: ReviewSubmissionRpcRow[] | null,
+  error: ReviewSubmissionRpcError | null
+): { placeId: string; reviewId: string } {
+  if (error) {
+    throw new ReviewSubmissionError(getReviewSubmissionErrorMessage(error));
+  }
+
+  const review = data?.[0];
+
+  if (!review?.place_id || !review.review_id) {
+    throw new ReviewSubmissionError();
+  }
+
+  return {
+    placeId: review.place_id,
+    reviewId: review.review_id,
+  };
+}
+
+function getCaughtReviewSubmissionMessage(error: unknown): string {
+  return error instanceof ReviewSubmissionError ? error.message : REVIEW_SUBMISSION_ERROR;
 }
 
 function validateReviewInput(input: { rating: number; priceRange: number | null }): string | null {
@@ -170,66 +204,6 @@ function validateReviewInput(input: { rating: number; priceRange: number | null 
   }
 
   return null;
-}
-
-async function createReviewForPlace({
-  userId,
-  placeId,
-  rating,
-  priceRange,
-  comment,
-  visitDate,
-  tagIds,
-}: {
-  userId: string;
-  placeId: string;
-  rating: number;
-  priceRange: number | null;
-  comment: string;
-  visitDate: string | null;
-  tagIds: string[];
-}): Promise<{ placeId: string; reviewId: string }> {
-  const supabase = await createClient();
-  const { data: review, error: reviewError } = await supabase
-    .from("reviews")
-    .insert({
-      user_id: userId,
-      place_id: placeId,
-      rating,
-      price_range: priceRange,
-      comment: comment.trim() || null,
-      visited_at: normalizeVisitDate(visitDate),
-    })
-    .select("id")
-    .single();
-
-  if (reviewError) {
-    throw new Error("Failed to create review.");
-  }
-
-  const uniqueTagIds = Array.from(new Set(tagIds.filter(Boolean)));
-
-  if (uniqueTagIds.length > 0) {
-    const { error: reviewTagsError } = await supabase.from("review_tags").insert(
-      uniqueTagIds.map((tagId) => ({
-        review_id: review.id,
-        tag_id: tagId,
-      }))
-    );
-
-    if (reviewTagsError) {
-      await deleteReview(review.id);
-      throw new Error("Failed to create review tags.");
-    }
-  }
-
-  await refreshPlaceRating(placeId);
-  revalidatePath("/home/places");
-
-  return {
-    placeId,
-    reviewId: review.id,
-  };
 }
 
 export async function findPlaceIdByGooglePlaceIdAction(
@@ -302,16 +276,27 @@ export async function createReviewWithPlaceAction(
   }
 
   try {
-    const placeId = await upsertPlaceFromGoogleDetails(input.place);
-    const review = await createReviewForPlace({
-      userId: user.userId,
-      placeId,
-      rating: input.rating,
-      priceRange: input.priceRange,
-      comment: input.comment,
-      visitDate: input.visitDate,
-      tagIds: input.tagIds,
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc("create_review_with_place_transaction", {
+      p_user_id: user.userId,
+      p_google_place_id: input.place.googlePlaceId,
+      p_name: input.place.name,
+      p_category: input.place.category,
+      p_lat: input.place.lat,
+      p_lng: input.place.lng,
+      p_rating: input.rating,
+      p_price_range: input.priceRange,
+      p_comment: input.comment,
+      p_visited_at: normalizeVisitDate(input.visitDate),
+      p_tag_ids: normalizeTagIds(input.tagIds),
+      p_image_url: input.place.imageUrl ?? null,
+      p_photo_attributions: toPhotoAttributionsJson(input.place.photoAttributions),
+      p_distance_from_office_meters: input.place.distanceFromOfficeMeters ?? null,
+      p_walking_duration_seconds: input.place.walkingDurationSeconds ?? null,
     });
+    const review = toReviewSubmissionResult(data, error);
+
+    revalidatePath("/home/places");
 
     return {
       success: true,
@@ -321,7 +306,7 @@ export async function createReviewWithPlaceAction(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "レビューの投稿に失敗しました。",
+      error: getCaughtReviewSubmissionMessage(error),
     };
   }
 }
@@ -343,30 +328,19 @@ export async function createReviewForExistingPlaceAction(
   }
 
   try {
-    const supabase = await createClient();
-    const { data: place, error: placeError } = await supabase
-      .from("places")
-      .select("id")
-      .eq("id", placeId)
-      .maybeSingle();
-
-    if (placeError) {
-      throw new Error("Failed to load place.");
-    }
-
-    if (!place) {
-      return { success: false, error: "お店が見つかりませんでした。" };
-    }
-
-    const review = await createReviewForPlace({
-      userId: user.userId,
-      placeId: place.id,
-      rating: input.rating,
-      priceRange: input.priceRange,
-      comment: input.comment,
-      visitDate: input.visitDate,
-      tagIds: input.tagIds,
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc("create_review_for_existing_place_transaction", {
+      p_user_id: user.userId,
+      p_place_id: placeId,
+      p_rating: input.rating,
+      p_price_range: input.priceRange,
+      p_comment: input.comment,
+      p_visited_at: normalizeVisitDate(input.visitDate),
+      p_tag_ids: normalizeTagIds(input.tagIds),
     });
+    const review = toReviewSubmissionResult(data, error);
+
+    revalidatePath("/home/places");
 
     return {
       success: true,
@@ -376,7 +350,7 @@ export async function createReviewForExistingPlaceAction(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "レビューの投稿に失敗しました。",
+      error: getCaughtReviewSubmissionMessage(error),
     };
   }
 }

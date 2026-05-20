@@ -4,7 +4,8 @@ import Image from "next/image";
 import { Bookmark, MapPin, SportShoe, Star } from "lucide-react";
 import { Tag } from "@/components/ui/Tag";
 import Link from "next/link";
-import { getWalkingDurationMinutes } from "@/lib/utils";
+import { getPriceRangeLabel, getWalkingDurationMinutes } from "@/lib/utils";
+import { BookmarkButton } from "./BookmarkButton";
 
 type Props = {
   place: Place;
@@ -14,6 +15,10 @@ type Props = {
 };
 
 export default function PlaceCard({ place, isSelected, onClick, placeDetailHref }: Props) {
+  const walkingDurationMinutes = getWalkingDurationMinutes(place.walkingDurationSeconds);
+  const distanceLabel =
+    place.distanceFromOfficeMeters === null ? "-" : `${place.distanceFromOfficeMeters}m`;
+
   return (
     <li>
       <Link
@@ -23,26 +28,30 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
         onClick={onClick}
         className={`inline-flex w-full cursor-pointer items-center gap-4 rounded-xl border p-4 ${isSelected ? "border-primary bg-primary-background" : "border-slate-200"}`}
       >
-        <Image
-          src={place.imageUrl as string}
-          alt="お店の写真"
-          width={96}
-          height={96}
-          className="aspect-square rounded-lg"
-        />
+        {place.imageUrl ? (
+          <Image
+            src={place.imageUrl}
+            alt="お店の写真"
+            width={96}
+            height={96}
+            className="aspect-square shrink-0 rounded-lg object-cover"
+          />
+        ) : (
+          <div className="flex size-24 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+            <MapPin className="size-7" aria-hidden="true" />
+            <span className="sr-only">お店の写真なし</span>
+          </div>
+        )}
         <div className="flex flex-1 flex-col gap-2">
           <div className="flex items-center">
             <p className="wrab-break-words line-clamp-1 min-w-0 flex-1 text-left text-lg font-semibold">
               {place.name}
             </p>
-            <button
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <Bookmark className="h-4 w-4 text-slate-600" />
-            </button>
+            <BookmarkButton
+              placeId={place.id}
+              isBookmarked={place.isBookmarked}
+              className="-mr-1"
+            />
           </div>
           <div className="inline-flex items-center gap-2">
             <div className="inline-flex items-center gap-1">
@@ -53,7 +62,7 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
             <span className="font-semibold">·</span>
             <div className="inline-flex items-center gap-1">
               <MapPin className="h-3 w-3 text-slate-500" />
-              <span className="text-sm text-slate-500">{place.distanceFromOfficeMeters}m</span>
+              <span className="text-sm text-slate-500">{distanceLabel}</span>
             </div>
             <span className="font-semibold">·</span>
 
@@ -61,15 +70,23 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
               <SportShoe className="h-3 w-3" />
 
               <span className="text-sm">
-                {getWalkingDurationMinutes(place.walkingDurationSeconds)}
-                <span className="text-xs">分</span>
+                {walkingDurationMinutes === null ? (
+                  "-"
+                ) : (
+                  <>
+                    {walkingDurationMinutes}
+                    <span className="text-xs">分</span>
+                  </>
+                )}
               </span>
             </div>
           </div>
           <div className="inline-flex gap-1">
             {place.category && <Tag variant="primary">{place.category}</Tag>}
             {/* TODO : 価格帯タグデータ */}
-            {place.price_range && <Tag variant="neutral">{place.price_range}</Tag>}
+            {place.price_range && (
+              <Tag variant="neutral">{getPriceRangeLabel(place.price_range)}</Tag>
+            )}
             {place.isGochimeshi === true && <Tag variant="neutral">ごちめし可</Tag>}
           </div>
         </div>

@@ -4,13 +4,16 @@ import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
+import { PlaceReviewsPanel } from "./_panel/PlaceReviewsPanel";
 import {
   buildPlacesHref,
   EXISTING_PLACE_REVIEW_PANEL,
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
+  PLACE_REVIEWS_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
+import { Footer } from "@/components/ui/Footer";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -21,9 +24,31 @@ type ExplorePageProps = {
     page?: SearchParamValue;
     panel?: SearchParamValue;
     placeId?: SearchParamValue;
+    reviewId?: SearchParamValue;
     rating?: SearchParamValue;
     price?: SearchParamValue;
+    category?: SearchParamValue;
+    tags?: SearchParamValue;
+    gotimeshi?: SearchParamValue;
+    keyword?: SearchParamValue;
   }>;
+};
+
+const GOOGLE_PLACE_CATEGORIES = {
+  CAFE: "カフェ",
+  SUSHI: "寿司",
+  RAMEN: "ラーメン",
+  CHINESE: "中華",
+  CURRY: "カレー",
+  IZAKAYA: "居酒屋",
+  SWEETS: "スイーツ",
+  BAR: "バー",
+  JAPANESE: "和食",
+  YAKINIKU: "焼肉",
+  WESTERN: "洋食",
+  FAST_FOOD: "ファストフード",
+  ASIAN: "アジア",
+  OTHERS: "その他",
 };
 
 function getFirstParam(value: SearchParamValue): string | undefined {
@@ -37,34 +62,75 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId } = await searchParams;
+  const { page, panel, placeId, reviewId, keyword, rating, price, category, tags, gotimeshi } =
+    await searchParams;
+  const searchParamsObj = await searchParams;
+  const baseParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParamsObj)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => baseParams.append(key, v));
+    } else {
+      baseParams.set(key, value);
+    }
+  }
   const requestedPage = parsePageParam(page);
   const panelName = getFirstParam(panel);
   const selectedPlaceId = getFirstParam(placeId);
+  const selectedReviewId = getFirstParam(reviewId);
+  const selectedkeyward = keyword ? String(getFirstParam(keyword)) : undefined;
+  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+  const filterPrice = price ? Number(getFirstParam(price)) : null;
+  const categories = Array.isArray(category) ? category : category ? [category] : [];
+  const filterCategories = categories.map(
+    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+  );
+  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
     panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
+  const isPlaceReviewsPanel = panelName === PLACE_REVIEWS_PANEL && Boolean(selectedPlaceId);
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
+    keyword: selectedkeyward,
+    rating: filterRating,
+    price: filterPrice,
+    categories: filterCategories,
+    tags: filterTags,
+    isGochimeshi: isGochimeshiSelected,
   });
-  const closePanelHref = buildPlacesHref({ page: pagination.page });
-  const newPlaceReviewHref = buildPlacesHref({
+  const closePanelHref = buildPlacesHref(baseParams, { page: pagination.page });
+  const newPlaceReviewHref = buildPlacesHref(baseParams, {
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
   const buildPlaceDetailHref = (placeId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: PLACE_DETAIL_PANEL,
       placeId,
     });
   const buildExistingPlaceReviewHref = (placeId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: EXISTING_PLACE_REVIEW_PANEL,
       placeId,
+    });
+  const buildPlaceReviewsHref = (placeId: string) =>
+    buildPlacesHref(baseParams, {
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+    });
+  const buildPlaceReviewDetailHref = (placeId: string, reviewId: string) =>
+    buildPlacesHref(baseParams, {
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+      reviewId,
     });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
@@ -74,7 +140,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     href: placeDetailHrefs[marker.id],
   }));
   const selectedMarkerId =
-    isPlaceDetailPanel || isExistingPlaceReviewPanel ? selectedPlaceId : null;
+    isPlaceDetailPanel || isExistingPlaceReviewPanel || isPlaceReviewsPanel
+      ? selectedPlaceId
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
@@ -86,6 +154,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           newPlaceReviewHref={newPlaceReviewHref}
           placeDetailHrefs={placeDetailHrefs} // 一覧のリンク用
         />
+        <Footer href={newPlaceReviewHref} submitText="店のレビューを投稿する" />
       </div>
       {isNewPlaceReviewPanel ? (
         <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
@@ -96,6 +165,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           placeId={selectedPlaceId}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
+          reviewDetailHref={(reviewId) => buildPlaceReviewDetailHref(selectedPlaceId, reviewId)}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
       {isExistingPlaceReviewPanel && selectedPlaceId ? (
@@ -103,6 +174,15 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           closeHref={closePanelHref}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           placeId={selectedPlaceId}
+        />
+      ) : null}
+      {isPlaceReviewsPanel && selectedPlaceId ? (
+        <PlaceReviewsPanel
+          closeHref={closePanelHref}
+          detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          initialReviewId={selectedReviewId}
+          placeId={selectedPlaceId}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
     </div>
