@@ -76,7 +76,9 @@ export const ReviewDetail = ({
       </div>
 
       {/* 3. コメントエリア */}
-      <p className="text-base leading-relaxed break-words text-slate-700">{comment}</p>
+      <p className="text-base leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+        {comment}
+      </p>
 
       {/* 4. タグエリア */}
       <div className="flex flex-wrap gap-2">

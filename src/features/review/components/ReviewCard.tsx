@@ -67,7 +67,7 @@ export const ReviewCard = ({
 
       {/* 3行制限のコメント */}
       <p
-        className={`wrab-break-words mt-3 text-xs leading-relaxed text-slate-700 ${isDetail ? `line-clamp-1` : `line-clamp-3`} `}
+        className={`mt-3 text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700 ${isDetail ? `line-clamp-1` : `line-clamp-3`} `}
       >
         {comment}
       </p>
