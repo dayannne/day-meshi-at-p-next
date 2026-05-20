@@ -91,6 +91,7 @@ export function useReviewForm({
   const clearMapMarkers = useMapMarkerStore((state) => state.clearMarkers);
   const selectMapMarker = useMapMarkerStore((state) => state.selectMarker);
   const placeDetailsAbortRef = useRef<AbortController | null>(null);
+  const isSubmittingRef = useRef(false);
   const isNewPlaceMode = mode === "new-place";
   const [selectedPlace, setSelectedPlace] = useState<
     ReviewFormPlaceInfo | SelectedPlaceInfo | undefined
@@ -330,9 +331,15 @@ export function useReviewForm({
   };
 
   const onSubmit = async (onSuccess: (placeId: string) => void) => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+
     if (!validate()) return;
 
+    isSubmittingRef.current = true;
     setIsPending(true);
+    let shouldReleaseSubmitLock = true;
 
     try {
       const reviewInput = {
@@ -387,13 +394,17 @@ export function useReviewForm({
       }
 
       onSuccess(result.placeId);
+      shouldReleaseSubmitLock = false;
     } catch {
       setErrors((currentErrors) => ({
         ...currentErrors,
         submit: "レビューの投稿に失敗しました。",
       }));
     } finally {
-      setIsPending(false);
+      if (shouldReleaseSubmitLock) {
+        isSubmittingRef.current = false;
+        setIsPending(false);
+      }
     }
   };
 
