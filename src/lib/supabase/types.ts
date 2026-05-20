@@ -345,6 +345,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      get_external_places_dump: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          name: string;
+          google_place_id: string;
+          category: string | null;
+          avg_rating: number;
+          review_count: number;
+          tags: Json;
+        }[];
+      };
       create_review_for_existing_place_transaction: {
         Args: {
           p_user_id: string;
