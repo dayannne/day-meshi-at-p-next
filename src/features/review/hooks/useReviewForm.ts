@@ -107,6 +107,7 @@ export function useReviewForm({
   const [comment, setComment] = useState("");
   const [visitDate, setVisitDate] = useState<Date | undefined>();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [validationAttemptCount, setValidationAttemptCount] = useState(0);
   const [priceRange, setPriceRange] = useState<number | null>(null);
   const { selectedTags, handleTagToggle } = useTagSelection();
   const [isPending, setIsPending] = useState(false);
@@ -319,7 +320,13 @@ export function useReviewForm({
     if (priceRange === null) newErrors.priceRange = "価格帯を選択してください。";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+
+    if (!isValid) {
+      setValidationAttemptCount((count) => count + 1);
+    }
+
+    return isValid;
   };
 
   const confirmExistingPlaceMatch = () => {
@@ -421,6 +428,7 @@ export function useReviewForm({
       comment,
       visitDate,
       errors,
+      validationAttemptCount,
       selectedTags,
       priceRange,
       groupedTags: tagGroups,

@@ -193,6 +193,12 @@ export function ReviewForm({
     tagGroups,
     onExistingPlaceMatch,
   });
+  const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const handledValidationAttemptRef = React.useRef(0);
+  const placeSectionRef = React.useRef<HTMLDivElement>(null);
+  const ratingSectionRef = React.useRef<HTMLDivElement>(null);
+  const priceRangeSectionRef = React.useRef<HTMLDivElement>(null);
+  const commentSectionRef = React.useRef<HTMLDivElement>(null);
   const isNewShop = mode === "new-place";
   const isPlaceSearchLoading = state.isSearchingPlaces || state.isLoadingPlaceDetails;
   const showSuggestions = isNewShop && state.placeSuggestions.length > 0;
@@ -204,13 +210,50 @@ export function ReviewForm({
     !state.placeSearchError &&
     state.placeSuggestions.length === 0;
 
+  React.useEffect(() => {
+    if (
+      state.validationAttemptCount === 0 ||
+      handledValidationAttemptRef.current === state.validationAttemptCount
+    ) {
+      return;
+    }
+
+    handledValidationAttemptRef.current = state.validationAttemptCount;
+
+    const firstErrorTarget =
+      (state.errors.place && placeSectionRef.current) ||
+      (state.errors.rating && ratingSectionRef.current) ||
+      (state.errors.priceRange && priceRangeSectionRef.current) ||
+      (state.errors.comment && commentSectionRef.current) ||
+      null;
+    const scrollArea = scrollAreaRef.current;
+
+    if (!firstErrorTarget || !scrollArea) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const scrollAreaRect = scrollArea.getBoundingClientRect();
+      const targetRect = firstErrorTarget.getBoundingClientRect();
+      const nextScrollTop = scrollArea.scrollTop + targetRect.top - scrollAreaRect.top - 16;
+
+      scrollArea.scrollTo({
+        top: Math.max(0, nextScrollTop),
+        behavior: "smooth",
+      });
+    });
+  }, [state.errors, state.validationAttemptCount]);
+
   return (
     <div className="flex h-full flex-col">
       {/* フォーム中身：スクロールエリア */}
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
+      <div
+        ref={scrollAreaRef}
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4"
+      >
         {/* 1. お店検索エリア */}
         {isNewShop && (
-          <div className="space-y-2">
+          <div ref={placeSectionRef} className="space-y-2">
             <div className="relative">
               {isPlaceSearchLoading ? (
                 <LoaderCircle
@@ -297,7 +340,7 @@ export function ReviewForm({
         ) : null}
 
         {/* 3. レート選択 */}
-        <FormItem className="flex flex-col gap-3">
+        <FormItem ref={ratingSectionRef} className="flex flex-col gap-3">
           <SectionTitle>
             レート<span className="text-red-500">*</span>
           </SectionTitle>
@@ -306,10 +349,10 @@ export function ReviewForm({
         </FormItem>
 
         {/* 4. タグ */}
-        <div className="flex flex-col gap-3">
+        <div ref={priceRangeSectionRef} className="flex flex-col gap-3">
           <SectionTitle>タグ</SectionTitle>
 
-          <PriceSelector value={state.priceRange} onChange={handlers.setPriceRange} />
+          <PriceSelector value={state.priceRange} required onChange={handlers.setPriceRange} />
           {state.errors.priceRange && (
             <p className="text-sm font-medium text-red-500">{state.errors.priceRange}</p>
           )}
@@ -353,7 +396,7 @@ export function ReviewForm({
         </div>
 
         {/* 6. コメント */}
-        <FormItem>
+        <FormItem ref={commentSectionRef}>
           <SectionTitle>コメント</SectionTitle>
           <FormControl>
             <Textarea
