@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { getPlaceReviewsAction } from "@/features/places/actions";
+import type { PlaceReviewSort } from "@/features/places/actions";
 import type { PlaceReview } from "@/features/places/types";
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
@@ -23,6 +25,11 @@ type PlaceReviewsPanelClientProps = {
   totalReviewCount: number;
 };
 
+const REVIEW_SORT_OPTIONS: { label: string; value: PlaceReviewSort }[] = [
+  { label: "最新順", value: "latest" },
+  { label: "評価順", value: "rating" },
+];
+
 export function PlaceReviewsPanelClient({
   detailHref,
   hasMore: initialHasMore,
@@ -34,13 +41,18 @@ export function PlaceReviewsPanelClient({
   reviewsHref,
   totalReviewCount,
 }: PlaceReviewsPanelClientProps) {
+  const [sort, setSort] = useState<PlaceReviewSort>("latest");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [reviewItems, setReviewItems] = useState(reviews);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [nextOffset, setNextOffset] = useState(initialNextOffset);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSorting, setIsSorting] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(initialReviewId ?? null);
   const selectedReview = reviewItems.find((review) => review.id === selectedReviewId) ?? null;
   const isReviewDetail = Boolean(selectedReview);
+  const currentSortLabel =
+    REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "最新順";
 
   const toggleLike = async (reviewId: string, newState: boolean) => {
     await toggleReviewLikeAction(reviewId, newState);
@@ -65,7 +77,7 @@ export function PlaceReviewsPanelClient({
   };
 
   const loadMoreReviews = async () => {
-    if (isLoadingMore || !hasMore) {
+    if (isLoadingMore || isSorting || !hasMore) {
       return;
     }
 
@@ -74,6 +86,7 @@ export function PlaceReviewsPanelClient({
     try {
       const reviewsPage = await getPlaceReviewsAction(placeId, {
         offset: nextOffset,
+        sort,
       });
 
       setReviewItems((currentReviews) => {
@@ -86,6 +99,30 @@ export function PlaceReviewsPanelClient({
       setNextOffset(reviewsPage.nextOffset);
     } finally {
       setIsLoadingMore(false);
+    }
+  };
+
+  const changeSort = async (nextSort: PlaceReviewSort) => {
+    if (sort === nextSort || isSorting || isLoadingMore) {
+      return;
+    }
+
+    setSortMenuOpen(false);
+    setIsSorting(true);
+
+    try {
+      const reviewsPage = await getPlaceReviewsAction(placeId, {
+        offset: 0,
+        sort: nextSort,
+      });
+
+      setSort(nextSort);
+      setSelectedReviewId(null);
+      setReviewItems(reviewsPage.reviews);
+      setHasMore(reviewsPage.hasMore);
+      setNextOffset(reviewsPage.nextOffset);
+    } finally {
+      setIsSorting(false);
     }
   };
 
@@ -116,11 +153,56 @@ export function PlaceReviewsPanelClient({
             </Link>
           </Button>
         )}
-        <div className="-my-1 flex items-center gap-2">
-          <h4 className="mt-0 text-lg font-bold break-words text-slate-950">{placeName}</h4>
+        <div className="-mt-1 -mb-2 flex min-h-8 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <h4 className="mt-0 text-lg font-bold break-words text-slate-950">{placeName}</h4>
+            {!isReviewDetail ? (
+              <p className="mt-0 shrink-0 text-xs font-medium text-slate-500">
+                {totalReviewCount}件
+              </p>
+            ) : null}
+          </div>
           {!isReviewDetail ? (
-            <p className="mt-0 text-xs font-medium text-slate-500">{totalReviewCount}件</p>
-          ) : null}
+            <Popover open={sortMenuOpen} onOpenChange={setSortMenuOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50"
+                  disabled={isSorting || isLoadingMore}
+                >
+                  {currentSortLabel}
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="z-50 w-32 gap-1 border border-slate-200 bg-white p-1 shadow-xl"
+              >
+                {REVIEW_SORT_OPTIONS.map((option) => {
+                  const isSelected = sort === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`flex h-9 w-full items-center justify-between rounded-md px-2.5 text-left text-xs font-bold transition-colors ${
+                        isSelected
+                          ? "bg-slate-100 text-slate-950"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                      }`}
+                      disabled={isSorting || isLoadingMore}
+                      onClick={() => changeSort(option.value)}
+                    >
+                      {option.label}
+                      {isSelected ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                    </button>
+                  );
+                })}
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <div className="h-8 w-[72px] shrink-0" aria-hidden="true" />
+          )}
         </div>
       </div>
 
@@ -162,10 +244,10 @@ export function PlaceReviewsPanelClient({
                   variant="outline"
                   size="sm"
                   className="h-10 w-full"
-                  disabled={isLoadingMore}
+                  disabled={isLoadingMore || isSorting}
                   onClick={loadMoreReviews}
                 >
-                  {isLoadingMore ? "読み込み中..." : "もっと見る"}
+                  {isLoadingMore || isSorting ? "読み込み中..." : "もっと見る"}
                 </Button>
               ) : null}
             </div>

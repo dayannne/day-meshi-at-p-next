@@ -53,7 +53,10 @@ type GetPlacesActionParams = {
 type GetPlaceReviewsActionParams = {
   offset?: number;
   limit?: number;
+  sort?: PlaceReviewSort;
 };
+
+export type PlaceReviewSort = "latest" | "rating";
 
 type PlacesPagination = {
   page: number;
@@ -359,7 +362,7 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
 
 export async function getPlaceReviewsAction(
   placeId: string,
-  { offset, limit }: GetPlaceReviewsActionParams = {}
+  { offset, limit, sort }: GetPlaceReviewsActionParams = {}
 ): Promise<GetPlaceReviewsActionResult> {
   const normalizedPlaceId = placeId.trim();
 
@@ -373,9 +376,10 @@ export async function getPlaceReviewsAction(
 
   const normalizedOffset = normalizeNonNegativeInteger(offset, 0);
   const normalizedLimit = normalizePositiveInteger(limit, REVIEW_PAGE_SIZE);
+  const normalizedSort: PlaceReviewSort = sort === "rating" ? "rating" : "latest";
   const user = await requireActiveUser();
   const admin = createAdminClient();
-  const { data: reviews, error: reviewsError } = await admin
+  let reviewsQuery = admin
     .from("reviews")
     .select(
       `
@@ -389,10 +393,20 @@ export async function getPlaceReviewsAction(
         )
       `
     )
-    .eq("place_id", normalizedPlaceId)
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: true })
-    .range(normalizedOffset, normalizedOffset + normalizedLimit);
+    .eq("place_id", normalizedPlaceId);
+
+  reviewsQuery =
+    normalizedSort === "rating"
+      ? reviewsQuery
+          .order("rating", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+      : reviewsQuery.order("created_at", { ascending: false }).order("id", { ascending: true });
+
+  const { data: reviews, error: reviewsError } = await reviewsQuery.range(
+    normalizedOffset,
+    normalizedOffset + normalizedLimit
+  );
 
   if (reviewsError) {
     throw new Error("Failed to load place reviews.");
