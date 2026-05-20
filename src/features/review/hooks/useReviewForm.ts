@@ -29,8 +29,12 @@ export interface ReviewFormPlaceInfo {
   types?: string[];
   primaryType?: string | null;
   category?: string | null;
+  price_range?: number | null;
   imageUrl?: string | null;
   photoAttributions?: GooglePlacePhotoAttribution[];
+  isGochimeshi?: boolean;
+  avgRating?: number;
+  reviewCount?: number;
   distanceFromOfficeMeters?: number | null;
   walkingDurationSeconds?: number | null;
 }

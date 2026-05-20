@@ -10,6 +10,7 @@ interface FooterProps {
   onCancel?: () => void;
   cancelText?: string;
   isPending?: boolean;
+  disabled?: boolean;
   pendingText?: string;
   submitError?: string;
   className?: string;
@@ -22,10 +23,13 @@ export function Footer({
   cancelText = "キャンセル",
   submitText = "投稿する",
   isPending = false,
+  disabled = false,
   pendingText = "送信中...",
   submitError,
   className,
 }: FooterProps) {
+  const isSubmitDisabled = disabled || isPending;
+
   return (
     <footer className={cn("flex flex-none flex-col", className)}>
       <div className="flex flex-row gap-2 border-t border-slate-200 bg-slate-50 p-4">
@@ -39,7 +43,7 @@ export function Footer({
           <Button
             asChild={!!href} // href가 있으면 Link를 감싸는 모드로 전환
             className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
-            disabled={isPending}
+            disabled={isSubmitDisabled}
             onClick={onSubmit}
           >
             {href ? (

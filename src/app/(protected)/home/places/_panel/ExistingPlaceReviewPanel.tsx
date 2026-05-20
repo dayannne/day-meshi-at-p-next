@@ -62,8 +62,12 @@ async function ExistingPlaceReviewBody({
     lat: place.lat,
     lng: place.lng,
     category: place.category,
+    price_range: place.price_range,
     imageUrl: place.imageUrl,
     photoAttributions: place.photoAttributions,
+    isGochimeshi: place.isGochimeshi,
+    avgRating: place.avgRating,
+    reviewCount: place.reviewCount,
     distanceFromOfficeMeters: place.distanceFromOfficeMeters,
     walkingDurationSeconds: place.walkingDurationSeconds,
   };
