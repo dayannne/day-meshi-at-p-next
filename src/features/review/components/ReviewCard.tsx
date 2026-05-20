@@ -1,6 +1,7 @@
 // お店詳細ページとお店のレビューリストページで使用するレビューカードコンポーネント
 "use client";
 
+import Link from "next/link";
 import { User } from "lucide-react";
 import { StarRating } from "@/features/review/components/StarRating";
 
@@ -23,6 +24,7 @@ interface ReviewCardProps {
   comment: string; //コメント
   date: Date | string; //日付(created_at or visited_at)
   variant: "reviewList" | "placeDetail"; //お店詳細ページかレビューリストかで見た目を変える
+  href?: string;
   onClick?: (id: string) => void;
 }
 
@@ -32,17 +34,17 @@ export const ReviewCard = ({
   rating,
   comment,
   date,
+  href,
   variant = "reviewList",
   onClick,
 }: ReviewCardProps) => {
   const formattedDate = new Date(date).toLocaleDateString("sv-SE");
   const isDetail = variant === "placeDetail";
-
-  return (
-    <div
-      onClick={() => onClick?.(id)}
-      className={`bg-card cursor-pointer rounded-xl p-4 transition-all duration-200 ${isDetail ? `bg-slate-50` : `border border-slate-200 bg-white`}`}
-    >
+  const cardClassName = `bg-card block cursor-pointer rounded-xl p-4 transition-all duration-200 ${
+    isDetail ? `bg-slate-50` : `border border-slate-200 bg-white`
+  }`;
+  const cardContent = (
+    <>
       <div className="flex items-center gap-3">
         {/* ユーザーアイコン コンポーネント化も検討 */}
         <div className="bg-primary-background flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
@@ -69,6 +71,20 @@ export const ReviewCard = ({
       >
         {comment}
       </p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} scroll={false} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div onClick={() => onClick?.(id)} className={cardClassName}>
+      {cardContent}
     </div>
   );
 };

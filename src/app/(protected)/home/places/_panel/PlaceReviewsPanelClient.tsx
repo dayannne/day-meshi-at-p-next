@@ -12,17 +12,21 @@ import { toggleReviewLikeAction } from "@/features/review/actions";
 
 type PlaceReviewsPanelClientProps = {
   detailHref: string;
+  initialReviewId?: string;
   placeName: string;
   reviews: PlaceReview[];
+  reviewsHref: string;
 };
 
 export function PlaceReviewsPanelClient({
   detailHref,
+  initialReviewId,
   placeName,
   reviews,
+  reviewsHref,
 }: PlaceReviewsPanelClientProps) {
   const [reviewItems, setReviewItems] = useState(reviews);
-  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(initialReviewId ?? null);
   const selectedReview = reviewItems.find((review) => review.id === selectedReviewId) ?? null;
   const isReviewDetail = Boolean(selectedReview);
 
@@ -43,6 +47,11 @@ export function PlaceReviewsPanelClient({
     );
   };
 
+  const showReviewList = () => {
+    setSelectedReviewId(null);
+    window.history.replaceState(null, "", reviewsHref);
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-none flex-col gap-3 border-b border-slate-100 p-4">
@@ -52,7 +61,7 @@ export function PlaceReviewsPanelClient({
             variant="ghost"
             size="sm"
             className="h-0 justify-start gap-2 px-0 text-xs"
-            onClick={() => setSelectedReviewId(null)}
+            onClick={showReviewList}
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             全てのレビュー

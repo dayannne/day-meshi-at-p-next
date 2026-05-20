@@ -10,7 +10,9 @@ import { PlaceReviewsPanelClient } from "./PlaceReviewsPanelClient";
 type PlaceReviewsPanelProps = {
   closeHref: string;
   detailHref: string;
+  initialReviewId?: string;
   placeId: string;
+  reviewsHref: string;
 };
 
 function PlaceReviewsLoading() {
@@ -41,8 +43,10 @@ function PlaceReviewsNotFound({ placeId }: { placeId: string }) {
 
 async function PlaceReviewsBody({
   detailHref,
+  initialReviewId,
   placeId,
-}: Pick<PlaceReviewsPanelProps, "detailHref" | "placeId">) {
+  reviewsHref,
+}: Pick<PlaceReviewsPanelProps, "detailHref" | "initialReviewId" | "placeId" | "reviewsHref">) {
   const [place, reviews] = await Promise.all([
     getPlaceAction(placeId),
     getPlaceReviewsAction(placeId),
@@ -60,16 +64,33 @@ async function PlaceReviewsBody({
   return (
     <>
       <MapMarkersSync source="place-detail" markers={[marker]} selectedMarkerId={place.id} />
-      <PlaceReviewsPanelClient detailHref={detailHref} placeName={place.name} reviews={reviews} />
+      <PlaceReviewsPanelClient
+        detailHref={detailHref}
+        initialReviewId={initialReviewId}
+        placeName={place.name}
+        reviews={reviews}
+        reviewsHref={reviewsHref}
+      />
     </>
   );
 }
 
-export function PlaceReviewsPanel({ closeHref, detailHref, placeId }: PlaceReviewsPanelProps) {
+export function PlaceReviewsPanel({
+  closeHref,
+  detailHref,
+  initialReviewId,
+  placeId,
+  reviewsHref,
+}: PlaceReviewsPanelProps) {
   return (
     <HomePanelFrame title="社員レビュー" closeHref={closeHref}>
-      <Suspense key={placeId} fallback={<PlaceReviewsLoading />}>
-        <PlaceReviewsBody detailHref={detailHref} placeId={placeId} />
+      <Suspense key={`${placeId}:${initialReviewId ?? ""}`} fallback={<PlaceReviewsLoading />}>
+        <PlaceReviewsBody
+          detailHref={detailHref}
+          initialReviewId={initialReviewId}
+          placeId={placeId}
+          reviewsHref={reviewsHref}
+        />
       </Suspense>
     </HomePanelFrame>
   );

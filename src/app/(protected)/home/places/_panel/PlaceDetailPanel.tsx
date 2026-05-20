@@ -28,6 +28,7 @@ type PlaceDetailPanelProps = {
   // 지도 마커 클릭/선택 상태와 상세 패널 URL을 맞추기 위한 href.
   detailHref: string;
   reviewHref: string;
+  reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 };
 
@@ -169,9 +170,11 @@ function PopularReviewTagsSection({
 
 function ReviewPreviewsSection({
   reviews,
+  reviewDetailHref,
   reviewsHref,
 }: {
   reviews: PlaceReviewPreview[];
+  reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
   // 상세 패널 안의 리뷰 미리보기 영역. 전체 리뷰 이동 버튼은 전체 리뷰 패널로 연결한다.
@@ -196,6 +199,7 @@ function ReviewPreviewsSection({
               rating={review.rating}
               comment={review.comment}
               date={review.date}
+              href={reviewDetailHref(review.id)}
               variant="placeDetail"
             />
           ))}
@@ -266,10 +270,12 @@ function PlaceNotFound({ placeId }: { placeId: string }) {
 async function PlaceDetailExtras({
   category,
   placeId,
+  reviewDetailHref,
   reviewsHref,
 }: {
   category: string | null;
   placeId: string;
+  reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
   // 부가 정보는 기본 장소 표시 이후 병렬로 로드해서 패널 첫 표시를 막지 않는다.
@@ -283,7 +289,11 @@ async function PlaceDetailExtras({
     <>
       <BusinessInfoSection details={googleBusinessDetails} />
       <PopularReviewTagsSection category={category} tags={popularReviewTags} />
-      <ReviewPreviewsSection reviews={reviewPreviews} reviewsHref={reviewsHref} />
+      <ReviewPreviewsSection
+        reviews={reviewPreviews}
+        reviewDetailHref={reviewDetailHref}
+        reviewsHref={reviewsHref}
+      />
     </>
   );
 }
@@ -292,11 +302,13 @@ async function PlaceDetailBody({
   placeId,
   detailHref,
   reviewHref,
+  reviewDetailHref,
   reviewsHref,
 }: {
   placeId: string;
   detailHref: string;
   reviewHref: string;
+  reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
   // 첫 화면에 필요한 기본 장소 데이터만 여기서 로드한다.
@@ -353,6 +365,7 @@ async function PlaceDetailBody({
             <PlaceDetailExtras
               category={place.category}
               placeId={place.id}
+              reviewDetailHref={reviewDetailHref}
               reviewsHref={reviewsHref}
             />
           </Suspense>
@@ -367,6 +380,7 @@ export function PlaceDetailPanel({
   placeId,
   detailHref,
   reviewHref,
+  reviewDetailHref,
   reviewsHref,
 }: PlaceDetailPanelProps) {
   return (
@@ -377,6 +391,7 @@ export function PlaceDetailPanel({
           placeId={placeId}
           detailHref={detailHref}
           reviewHref={reviewHref}
+          reviewDetailHref={reviewDetailHref}
           reviewsHref={reviewsHref}
         />
       </Suspense>

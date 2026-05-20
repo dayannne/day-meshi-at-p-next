@@ -23,6 +23,7 @@ type ExplorePageProps = {
     page?: SearchParamValue;
     panel?: SearchParamValue;
     placeId?: SearchParamValue;
+    reviewId?: SearchParamValue;
     rating?: SearchParamValue;
     price?: SearchParamValue;
     category?: SearchParamValue;
@@ -59,19 +60,20 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId, rating, price, category, tags, gotimeshi } = await searchParams;
-  const requestedPage = parsePageParam(page);
-  const panelName = getFirstParam(panel);
-  const selectedPlaceId = getFirstParam(placeId);
-  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
-  const filterPrice = price ? Number(getFirstParam(price)) : null;
-  const categories = Array.isArray(category) ? category : category ? [category] : [];
-  const filterCategories = categories.map(
-    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
-  );
-  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
-  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
-
+const { page, panel, placeId, reviewId, rating, price, category, tags, gotimeshi } =
+  await searchParams;
+const requestedPage = parsePageParam(page);
+const panelName = getFirstParam(panel);
+const selectedPlaceId = getFirstParam(placeId);
+const selectedReviewId = getFirstParam(reviewId);
+const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+const filterPrice = price ? Number(getFirstParam(price)) : null;
+const categories = Array.isArray(category) ? category : category ? [category] : [];
+const filterCategories = categories.map(
+  (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+);
+const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
@@ -109,6 +111,13 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       panel: PLACE_REVIEWS_PANEL,
       placeId,
     });
+  const buildPlaceReviewDetailHref = (placeId: string, reviewId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+      reviewId,
+    });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
@@ -141,6 +150,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           placeId={selectedPlaceId}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
+          reviewDetailHref={(reviewId) => buildPlaceReviewDetailHref(selectedPlaceId, reviewId)}
           reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
@@ -155,7 +165,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         <PlaceReviewsPanel
           closeHref={closePanelHref}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          initialReviewId={selectedReviewId}
           placeId={selectedPlaceId}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
     </div>
