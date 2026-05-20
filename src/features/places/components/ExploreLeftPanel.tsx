@@ -157,12 +157,6 @@ export function ExploreLeftPanel({
           <h1 className="bg-primary-linear bg-clip-text text-4xl font-black text-transparent">
             Meshi At Play
           </h1>
-          <Button asChild size="sm" className="gap-2">
-            <Link href={newPlaceReviewHref} scroll={false}>
-              <Plus className="size-4" aria-hidden="true" />
-              新しいレビュー
-            </Link>
-          </Button>
         </div>
 
         <div className="relative">
