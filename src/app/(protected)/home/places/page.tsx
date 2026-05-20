@@ -61,20 +61,30 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-const { page, panel, placeId, reviewId, rating, price, category, tags, gotimeshi } =
-  await searchParams;
-const requestedPage = parsePageParam(page);
-const panelName = getFirstParam(panel);
-const selectedPlaceId = getFirstParam(placeId);
-const selectedReviewId = getFirstParam(reviewId);
-const filterRating = rating ? Number(getFirstParam(rating)) : 0;
-const filterPrice = price ? Number(getFirstParam(price)) : null;
-const categories = Array.isArray(category) ? category : category ? [category] : [];
-const filterCategories = categories.map(
-  (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
-);
-const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
-const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
+  const { page, panel, placeId, reviewId, rating, price, category, tags, gotimeshi } =
+    await searchParams;
+  const searchParamsObj = await searchParams;
+  const baseParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParamsObj)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => baseParams.append(key, v));
+    } else {
+      baseParams.set(key, value);
+    }
+  }
+  const requestedPage = parsePageParam(page);
+  const panelName = getFirstParam(panel);
+  const selectedPlaceId = getFirstParam(placeId);
+  const selectedReviewId = getFirstParam(reviewId);
+  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+  const filterPrice = price ? Number(getFirstParam(price)) : null;
+  const categories = Array.isArray(category) ? category : category ? [category] : [];
+  const filterCategories = categories.map(
+    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+  );
+  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
@@ -89,31 +99,31 @@ const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
     tags: filterTags,
     isGochimeshi: isGochimeshiSelected,
   });
-  const closePanelHref = buildPlacesHref({ page: pagination.page });
-  const newPlaceReviewHref = buildPlacesHref({
+  const closePanelHref = buildPlacesHref(baseParams, { page: pagination.page });
+  const newPlaceReviewHref = buildPlacesHref(baseParams, {
     page: pagination.page,
     panel: NEW_PLACE_REVIEW_PANEL,
   });
   const buildPlaceDetailHref = (placeId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: PLACE_DETAIL_PANEL,
       placeId,
     });
   const buildExistingPlaceReviewHref = (placeId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: EXISTING_PLACE_REVIEW_PANEL,
       placeId,
     });
   const buildPlaceReviewsHref = (placeId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: PLACE_REVIEWS_PANEL,
       placeId,
     });
   const buildPlaceReviewDetailHref = (placeId: string, reviewId: string) =>
-    buildPlacesHref({
+    buildPlacesHref(baseParams, {
       page: pagination.page,
       panel: PLACE_REVIEWS_PANEL,
       placeId,
