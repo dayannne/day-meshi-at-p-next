@@ -228,14 +228,29 @@ function PlaceDetailLoading() {
   return (
     <>
       <MapMarkersSync source="place-detail" markers={[]} />
-      <div className="h-full overflow-y-auto p-6">
-        <div className="space-y-4">
-          <div className="aspect-4/3 w-full animate-pulse rounded-lg bg-slate-100" />
-          <div className="space-y-2">
-            <div className="h-5 w-3/4 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-col gap-4 overflow-y-auto p-6">
+          <div className="flex flex-col gap-3">
+            {/* Image */}
+            <div className="flex flex-col gap-1">
+              <div className="aspect-video w-full animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-3 w-32 animate-pulse rounded bg-slate-100" />
+            </div>
+            {/* Title */}
+            <div className="h-7 w-3/4 animate-pulse rounded-sm bg-slate-100" />
+            {/* Rating */}
+            <div className="flex items-center gap-1">
+              <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+              <div className="h-5 w-10 animate-pulse rounded bg-slate-100" />
+              <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
+            </div>
           </div>
-          <p className="text-sm text-slate-500">お店情報を読み込んでいます。</p>
+
+          <PlaceDetailExtrasLoading />
+        </div>
+        {/* Footer placeholder */}
+        <div className="border-t border-slate-200 bg-slate-50 p-4">
+          <div className="h-11 w-full animate-pulse rounded-lg bg-slate-100" />
         </div>
       </div>
     </>
@@ -245,19 +260,42 @@ function PlaceDetailLoading() {
 function PlaceDetailExtrasLoading() {
   // 内側のSuspense fallback。Google情報/タグ/レビューなど、ロードが遅い付加的なセクションのみ代替する。
   return (
-    <div className="space-y-4">
-      <section className="border-t border-slate-200 pt-4">
-        <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-        <div className="mt-3 space-y-2">
-          <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+    <div className="flex flex-col gap-6">
+      {/* Popular Tags */}
+      <div className="flex flex-wrap gap-2">
+        <div className="h-8 w-24 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-8 w-20 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-8 w-28 animate-pulse rounded-md bg-slate-100" />
+      </div>
+
+      {/* Business Info */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
+          </div>
         </div>
-      </section>
+        <div className="h-9 w-full animate-pulse rounded-lg bg-slate-100" />
+      </div>
+
+      {/* Review Previews */}
       <section className="border-t border-slate-200 pt-4">
-        <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-        <div className="mt-3 flex gap-2">
-          <div className="h-6 w-16 animate-pulse rounded-full bg-slate-100" />
-          <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-24 animate-pulse rounded bg-slate-100" />
+          <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="h-24 w-full animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-24 w-full animate-pulse rounded-lg bg-slate-100" />
         </div>
       </section>
     </div>
