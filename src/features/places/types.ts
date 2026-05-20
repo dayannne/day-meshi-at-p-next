@@ -41,6 +41,7 @@ export type PlaceReview = {
   priceRange: number | null;
   comment: string;
   date: string;
+  visitDate: string | null;
   tags: string[];
   initialLikeCount: number;
   initialIsLiked: boolean;

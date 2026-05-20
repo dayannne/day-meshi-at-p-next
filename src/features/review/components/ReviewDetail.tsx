@@ -16,6 +16,7 @@ interface ReviewDetailProps {
   rating: number;
   priceRange?: number | null;
   date: Date | string;
+  visitDate?: Date | string | null;
   comment: string;
   tags: string[];
 
@@ -38,6 +39,7 @@ export const ReviewDetail = ({
   rating,
   priceRange,
   date,
+  visitDate,
   comment,
   tags,
   initialLikeCount,
@@ -51,6 +53,7 @@ export const ReviewDetail = ({
   // LikeButtonに任せるので、ここでの useState は不要になりました！スッキリ！
 
   const formattedDate = new Date(date).toLocaleDateString("sv-SE");
+  const formattedVisitDate = visitDate ? new Date(visitDate).toLocaleDateString("sv-SE") : null;
   const isOwner = currentUserId === authorId;
 
   return (
@@ -82,6 +85,9 @@ export const ReviewDetail = ({
       <p className="text-base leading-relaxed break-words whitespace-pre-wrap text-slate-700">
         {comment}
       </p>
+      {formattedVisitDate ? (
+        <span className="mt-2 text-sm font-medium text-slate-400">{formattedVisitDate} 訪問</span>
+      ) : null}
 
       {/* 4. タグエリア */}
       <div className="flex flex-wrap gap-2">

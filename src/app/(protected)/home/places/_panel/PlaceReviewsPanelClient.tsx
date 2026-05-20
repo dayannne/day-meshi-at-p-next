@@ -215,6 +215,7 @@ export function PlaceReviewsPanelClient({
             rating={selectedReview.rating}
             priceRange={selectedReview.priceRange}
             date={selectedReview.date}
+            visitDate={selectedReview.visitDate}
             comment={selectedReview.comment}
             tags={selectedReview.tags}
             initialLikeCount={selectedReview.initialLikeCount}

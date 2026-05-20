@@ -93,6 +93,7 @@ type PlaceReviewRow = {
   price_range: number | null;
   comment: string | null;
   created_at: string;
+  visited_at: string | null;
 } & ReviewAuthorRow;
 
 type ReviewAuthorRow = {
@@ -397,6 +398,7 @@ export async function getPlaceReviewsAction(
         price_range,
         comment,
         created_at,
+        visited_at,
         profiles!reviews_user_id_fkey (
           nickname
         )
@@ -492,6 +494,7 @@ export async function getPlaceReviewsAction(
       priceRange: review.price_range,
       comment: review.comment?.trim() || "",
       date: review.created_at,
+      visitDate: review.visited_at,
       tags: tagsByReviewId.get(review.id) ?? [],
       initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
       initialIsLiked: likedReviewIds.has(review.id),
