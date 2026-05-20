@@ -21,6 +21,7 @@ import type {
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
+import { Footer } from "@/components/ui/Footer";
 
 type PlaceDetailPanelProps = {
   closeHref: string;
@@ -346,21 +347,6 @@ async function PlaceDetailBody({
             <h4 className="text-lg font-bold break-words text-slate-950">{place.name}</h4>
           </div>
 
-          {/* 기본 정보 영역. 이 블록은 부가 정보 로딩과 독립적으로 먼저 표시되어야 한다. */}
-          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm text-slate-600">
-            <dt className="font-semibold text-slate-950">評価</dt>
-            <dd>
-              {place.avgRating} ({place.reviewCount}件)
-            </dd>
-          </dl>
-
-          <Button asChild size="sm" className="h-10 w-full gap-2">
-            <Link href={reviewHref} scroll={false}>
-              <PencilLine className="size-4" aria-hidden="true" />
-              レビューを書く
-            </Link>
-          </Button>
-
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
             <PlaceDetailExtras
               category={place.category}
@@ -370,6 +356,7 @@ async function PlaceDetailBody({
             />
           </Suspense>
         </div>
+        <Footer href={reviewHref} submitText="ビューを書く" />
       </div>
     </>
   );

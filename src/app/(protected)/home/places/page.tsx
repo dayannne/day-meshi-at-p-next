@@ -13,6 +13,7 @@ import {
   PLACE_REVIEWS_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
+import { Footer } from "@/components/ui/Footer";
 
 const PLACES_PAGE_SIZE = 20;
 
@@ -140,6 +141,7 @@ const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
           newPlaceReviewHref={newPlaceReviewHref}
           placeDetailHrefs={placeDetailHrefs} // 一覧のリンク用
         />
+        <Footer href={newPlaceReviewHref} submitText="店のレビューを投稿する" />
       </div>
       {isNewPlaceReviewPanel ? (
         <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
