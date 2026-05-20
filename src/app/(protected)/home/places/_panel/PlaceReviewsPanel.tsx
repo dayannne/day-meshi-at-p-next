@@ -20,7 +20,6 @@ function PlaceReviewsLoading() {
         <div className="h-5 w-40 animate-pulse rounded bg-slate-100" />
         <div className="h-24 w-full animate-pulse rounded bg-slate-100" />
         <div className="h-24 w-full animate-pulse rounded bg-slate-100" />
-        <p className="text-sm text-slate-500">レビューを読み込んでいます。</p>
       </div>
     </div>
   );

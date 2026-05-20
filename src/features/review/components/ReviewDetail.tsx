@@ -51,7 +51,7 @@ export const ReviewDetail = ({
   const isOwner = currentUserId === authorId;
 
   return (
-    <div className="relative flex flex-col gap-6 p-6">
+    <div className="relative flex flex-col gap-6 px-6 py-3">
       {/* 1. ヘッダー：モードによって出し分け */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export const ReviewDetail = ({
       </div>
 
       {/* 5. フッター：いいね ＆ 削除アクション */}
-      <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-4">
+      <div className="flex items-center justify-between border-t border-slate-50 pt-4">
         {/* 子コンポーネントがすべてのロジックを持ってくれているので、渡すだけで完結 */}
         <LikeButton
           reviewId={id}

@@ -41,7 +41,7 @@ export const ReviewCard = ({
   return (
     <div
       onClick={() => onClick?.(id)}
-      className={`bg-card cursor-pointer rounded-xl p-4 transition-all duration-200 hover:border hover:border-slate-100 ${isDetail ? `bg-slate-50` : `border border-slate-200 bg-white`}`}
+      className={`bg-card cursor-pointer rounded-xl p-4 transition-all duration-200 ${isDetail ? `bg-slate-50` : `border border-slate-200 bg-white`}`}
     >
       <div className="flex items-center gap-3">
         {/* ユーザーアイコン コンポーネント化も検討 */}
