@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { PencilLine } from "lucide-react";
+import { Clock, MapPin, Phone, Star } from "lucide-react";
 
 import { MapMarkersSync } from "@/components/google-maps";
 import { Button } from "@/components/ui/Button";
@@ -21,11 +21,14 @@ import type {
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
+import Image from "next/image";
+import { Footer } from "@/components/ui/Footer";
+import { cn, getPriceRangeLabel } from "@/lib/utils";
 
 type PlaceDetailPanelProps = {
   closeHref: string;
   placeId: string;
-  // 지도 마커 클릭/선택 상태와 상세 패널 URL을 맞추기 위한 href.
+  // 地図マーカーのクリック/選択状態と詳細パネルのURLを合わせるためのhref
   detailHref: string;
   reviewHref: string;
   reviewDetailHref: (reviewId: string) => string;
@@ -50,8 +53,8 @@ function PhotoAttributions({ place }: { place: Place }) {
   }
 
   return (
-    <p className="text-xs leading-snug text-slate-500">
-      Photo:{" "}
+    <p className="rounded-lg border border-slate-200 p-2 text-xs leading-snug text-slate-500">
+      写真提供:{" "}
       {place.photoAttributions.map((attribution, index) => {
         const href = normalizeAttributionUrl(attribution.uri);
         const separator = index > 0 ? ", " : "";
@@ -78,56 +81,71 @@ function PhotoAttributions({ place }: { place: Place }) {
   );
 }
 
-function getBusinessStatusLabel(details: PlaceGoogleBusinessDetails): string {
+function getBusinessStatus(details: PlaceGoogleBusinessDetails) {
+  // 1. 優先順位が高い特殊な状態からチェック
+
   switch (details.businessStatus) {
     case "CLOSED_TEMPORARILY":
-      return "臨時休業";
+      return { label: "臨時休業", color: "text-red-500" };
     case "CLOSED_PERMANENTLY":
-      return "閉業";
+      return { label: "閉業", color: "text-red-500" };
     case "FUTURE_OPENING":
-      return "開業予定";
+      return { label: "開業予定", color: "text-blue-500" };
+
+    // 2. 特殊な状態でない場合（OPERATIONALなど）、営業中かどうかを判断
     default:
       if (details.openNow === true) {
-        return "営業中";
+        return { label: "営業中", color: "text-green-500" };
       }
-
       if (details.openNow === false) {
-        return "営業時間外";
+        return { label: "営業時間外", color: "text-red-500" };
       }
 
-      return "不明";
+      // 3. データがまったくない場合
+      return { label: "不明", color: "text-slate-500" };
   }
 }
 
 function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails | null }) {
-  // Google Places에서 가져오는 영업 정보 영역. 기본 장소 정보보다 늦게 로드될 수 있다.
+  // Google Placesから取得する営業情報エリア。基本の場所情報より後にロードされる場合がある。
+
+  if (!details) return <></>;
+
+  const { label, color } = getBusinessStatus(details);
+
   return (
-    <section className="border-t border-slate-200 pt-4">
-      <h5 className="text-sm font-bold text-slate-950">店舗情報</h5>
+    <>
       {details ? (
-        <div className="mt-3 space-y-3">
-          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm text-slate-600">
-            <dt className="font-semibold text-slate-950">住所</dt>
-            <dd className="break-words">{details.address ?? "-"}</dd>
-            <dt className="font-semibold text-slate-950">電話番号</dt>
-            <dd className="break-words">
-              {details.phoneNumber ? (
-                <a href={`tel:${details.phoneNumber}`} className="underline underline-offset-2">
-                  {details.phoneNumber}
-                </a>
-              ) : (
-                "-"
-              )}
-            </dd>
-            <dt className="font-semibold text-slate-950">営業状態</dt>
-            <dd>{getBusinessStatusLabel(details)}</dd>
-            <dt className="font-semibold text-slate-950">今日の営業時間</dt>
-            <dd className="break-words">{details.todayOpeningHours ?? "営業時間不明"}</dd>
-          </dl>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 text-sm text-slate-600">
+            <div className="flex items-start gap-2">
+              <MapPin className="stroke-primary h-4 w-4" />
+              <p>{details.address ?? "-"}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="stroke-primary h-4 w-4" />
+              <p>
+                <span className={cn("font-semibold", color)}>{label}</span>{" "}
+                <span>{details.todayOpeningHours ?? "営業時間不明"}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="stroke-primary h-4 w-4" />
+              <p>
+                {details.phoneNumber ? (
+                  <a href={`tel:${details.phoneNumber}`} className="underline underline-offset-2">
+                    {details.phoneNumber}
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </p>
+            </div>
+          </div>
           {details.googleMapsUri ? (
             <Button asChild variant="outline" size="sm" className="h-9 w-full">
               <a href={details.googleMapsUri} target="_blank" rel="noreferrer">
-                Google Mapsで開く
+                Google マップで開く
               </a>
             </Button>
           ) : null}
@@ -135,36 +153,40 @@ function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails 
       ) : (
         <p className="mt-3 text-sm text-slate-500">Google Mapsの店舗情報を取得できませんでした。</p>
       )}
-    </section>
+    </>
   );
 }
 
 function PopularReviewTagsSection({
   category,
   tags,
+  price_range,
 }: {
   category: string | null;
   tags: PlacePopularReviewTag[];
+  price_range: number | null;
 }) {
-  // 카테고리는 첫 번째 칩으로 고정하고, 리뷰 기반 인기 태그는 그 뒤에 붙인다.
   return (
-    <section className="border-t border-slate-200 pt-4">
-      <h5 className="text-sm font-bold text-slate-950">カテゴリ・人気タグ</h5>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
-          <span className="break-words">{category ?? "カテゴリ未設定"}</span>
+    <div className="flex flex-wrap gap-2">
+      <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
+        <span>{category ?? "カテゴリ未設定"}</span>
+      </Tag>
+      {price_range && (
+        <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal" variant="neutral">
+          <span>{getPriceRangeLabel(price_range)}</span>
         </Tag>
-        {tags.map((tag) => (
-          <Tag key={tag.id} className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
-            {tag.emoji ? <span>{tag.emoji}</span> : null}
-            <span className="break-words">{tag.name}</span>
-          </Tag>
-        ))}
-      </div>
-      {tags.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">まだタグ付きレビューがありません。</p>
-      ) : null}
-    </section>
+      )}
+      {tags.map((tag) => (
+        <Tag
+          key={tag.id}
+          className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal"
+          variant="secondary"
+        >
+          {tag.emoji ? <span>{tag.emoji}</span> : null}
+          <span>{tag.name}</span>
+        </Tag>
+      ))}
+    </div>
   );
 }
 
@@ -177,20 +199,18 @@ function ReviewPreviewsSection({
   reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
-  // 상세 패널 안의 리뷰 미리보기 영역. 전체 리뷰 이동 버튼은 전체 리뷰 패널로 연결한다.
+  // 詳細パネル内のレビュープレビューエリア。全レビューへの移動ボタンはまだ無効。
   return (
     <section className="border-t border-slate-200 pt-4">
       <div className="flex items-center justify-between gap-3">
         <h5 className="text-sm font-bold text-slate-950">社員レビュー</h5>
-        <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
-          <Link href={reviewsHref} scroll={false}>
-            全てのレビュー
-          </Link>
-        </Button>
+        <Link href={reviewsHref} className="text-primary text-sm hover:underline">
+          全てのレビュー
+        </Link>
       </div>
 
       {reviews.length > 0 ? (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 flex flex-col gap-3">
           {reviews.map((review) => (
             <ReviewCard
               key={review.id}
@@ -205,25 +225,42 @@ function ReviewPreviewsSection({
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">まだ社員レビューがありません。</p>
+        <p className="mt-3 py-20 text-center text-sm text-slate-500">
+          まだ社員レビューがありません。
+        </p>
       )}
     </section>
   );
 }
 
 function PlaceDetailLoading() {
-  // 바깥 Suspense fallback. 로딩 중에도 기존 리스트 마커 선택은 유지해야 하므로 선택 상태는 건드리지 않는다.
+  // 外側のSuspense fallback。ロード中も既存のリストマーカーの選択状態を維持するため、選択状態は変更しない。
   return (
     <>
       <MapMarkersSync source="place-detail" markers={[]} />
-      <div className="h-full overflow-y-auto p-6">
-        <div className="space-y-4">
-          <div className="aspect-4/3 w-full animate-pulse rounded-lg bg-slate-100" />
-          <div className="space-y-2">
-            <div className="h-5 w-3/4 animate-pulse rounded bg-slate-100" />
-            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-col gap-4 overflow-y-auto p-6">
+          <div className="flex flex-col gap-3">
+            {/* Image */}
+            <div className="flex flex-col gap-1">
+              <div className="aspect-video w-full animate-pulse rounded-lg bg-slate-100" />
+              <div className="h-3 w-32 animate-pulse rounded bg-slate-100" />
+            </div>
+            {/* Title */}
+            <div className="h-7 w-3/4 animate-pulse rounded-sm bg-slate-100" />
+            {/* Rating */}
+            <div className="flex items-center gap-1">
+              <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+              <div className="h-5 w-10 animate-pulse rounded bg-slate-100" />
+              <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
+            </div>
           </div>
-          <p className="text-sm text-slate-500">お店情報を読み込んでいます。</p>
+
+          <PlaceDetailExtrasLoading />
+        </div>
+        {/* Footer placeholder */}
+        <div className="border-t border-slate-200 bg-slate-50 p-4">
+          <div className="h-11 w-full animate-pulse rounded-lg bg-slate-100" />
         </div>
       </div>
     </>
@@ -231,21 +268,44 @@ function PlaceDetailLoading() {
 }
 
 function PlaceDetailExtrasLoading() {
-  // 안쪽 Suspense fallback. Google 정보/태그/리뷰처럼 느린 부가 섹션만 대체한다.
+  // 内側のSuspense fallback。Google情報/タグ/レビューなど、ロードが遅い付加的なセクションのみ代替する。
   return (
-    <div className="space-y-4">
-      <section className="border-t border-slate-200 pt-4">
-        <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-        <div className="mt-3 space-y-2">
-          <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+    <div className="flex flex-col gap-6">
+      {/* Popular Tags */}
+      <div className="flex flex-wrap gap-2">
+        <div className="h-8 w-24 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-8 w-20 animate-pulse rounded-md bg-slate-100" />
+        <div className="h-8 w-28 animate-pulse rounded-md bg-slate-100" />
+      </div>
+
+      {/* Business Info */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-slate-100" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-100" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-pulse rounded bg-slate-100" />
+            <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
+          </div>
         </div>
-      </section>
+        <div className="h-9 w-full animate-pulse rounded-lg bg-slate-100" />
+      </div>
+
+      {/* Review Previews */}
       <section className="border-t border-slate-200 pt-4">
-        <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-        <div className="mt-3 flex gap-2">
-          <div className="h-6 w-16 animate-pulse rounded-full bg-slate-100" />
-          <div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-24 animate-pulse rounded bg-slate-100" />
+          <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="h-24 w-full animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-24 w-full animate-pulse rounded-lg bg-slate-100" />
         </div>
       </section>
     </div>
@@ -253,7 +313,7 @@ function PlaceDetailExtrasLoading() {
 }
 
 function PlaceNotFound({ placeId }: { placeId: string }) {
-  // 없는 장소로 직접 접근한 경우 상세 전용 마커 레이어도 같이 비운다.
+  // 存在しない場所に直接アクセスした場合、詳細専用のマーカーレイヤーも空にする。
   return (
     <>
       <MapMarkersSync source="place-detail" markers={[]} selectedMarkerId={null} />
@@ -268,17 +328,19 @@ function PlaceNotFound({ placeId }: { placeId: string }) {
 }
 
 async function PlaceDetailExtras({
-  category,
   placeId,
+  category,
+  price_range,
   reviewDetailHref,
   reviewsHref,
 }: {
-  category: string | null;
   placeId: string;
+  category: string | null;
+  price_range: number | null;
   reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
-  // 부가 정보는 기본 장소 표시 이후 병렬로 로드해서 패널 첫 표시를 막지 않는다.
+  // 付加情報は基本情報の表示後に並列でロードし、パネルの初回表示を妨げないようにする。
   const [googleBusinessDetails, popularReviewTags, reviewPreviews] = await Promise.all([
     getPlaceGoogleBusinessDetailsAction(placeId),
     getPlacePopularReviewTagsAction(placeId),
@@ -287,8 +349,12 @@ async function PlaceDetailExtras({
 
   return (
     <>
+      <PopularReviewTagsSection
+        category={category}
+        tags={popularReviewTags}
+        price_range={price_range}
+      />
       <BusinessInfoSection details={googleBusinessDetails} />
-      <PopularReviewTagsSection category={category} tags={popularReviewTags} />
       <ReviewPreviewsSection
         reviews={reviewPreviews}
         reviewDetailHref={reviewDetailHref}
@@ -311,7 +377,7 @@ async function PlaceDetailBody({
   reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
-  // 첫 화면에 필요한 기본 장소 데이터만 여기서 로드한다.
+  // 初回画面に必要な基本の場所データのみをここでロードする。
   const place = await getPlaceAction(placeId);
 
   if (!place) {
@@ -325,51 +391,48 @@ async function PlaceDetailBody({
 
   return (
     <>
-      {/* 리스트 페이지에 없는 장소로 직접 접근해도 지도에서 선택 장소가 보이도록 별도 레이어에 등록한다. */}
+      {/* リストページにない場所に直接アクセスしても地図上で選択した場所が表示されるよう、別レイヤーに登録する。 */}
       <MapMarkersSync source="place-detail" markers={[marker]} selectedMarkerId={place.id} />
-      <div className="h-full overflow-y-auto p-6">
-        <div className="space-y-4">
-          {/* 대표 이미지 영역. 디자인 변경 시 attribution 텍스트까지 한 세트로 다룬다. */}
-          {place.imageUrl ? (
-            <div className="space-y-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={place.imageUrl}
-                alt={`${place.name}の写真`}
-                className="aspect-4/3 w-full rounded-lg object-cover"
-              />
-              <PhotoAttributions place={place} />
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex flex-col gap-4 overflow-y-auto p-6">
+          <div className="flex flex-col gap-3">
+            {/* 代表画像エリア。デザイン変更時はattributionテキストまで一連のセットとして扱う。 */}
+            {place.imageUrl ? (
+              <div className="flex flex-col gap-1">
+                {}
+                <Image
+                  src={place.imageUrl}
+                  alt={`${place.name}の写真`}
+                  className="aspect-video w-full rounded-lg object-cover"
+                  width={430}
+                  height={243}
+                />
+                <PhotoAttributions place={place} />
+              </div>
+            ) : null}
+            <h4 className="wrap-break-words text-lg font-bold text-slate-950">{place.name}</h4>
+
+            {/* 基本情報エリア。このブロックは付加情報のロードとは独立して先に表示される必要がある。 */}
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-400" />
+              <span className="inline-flex items-center gap-1 font-semibold text-slate-950">
+                {place.avgRating}
+              </span>
+              <span className="text-sm text-slate-500">({place.reviewCount}件のレビュー)</span>
             </div>
-          ) : null}
-
-          <div>
-            <h4 className="text-lg font-bold break-words text-slate-950">{place.name}</h4>
           </div>
-
-          {/* 기본 정보 영역. 이 블록은 부가 정보 로딩과 독립적으로 먼저 표시되어야 한다. */}
-          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm text-slate-600">
-            <dt className="font-semibold text-slate-950">評価</dt>
-            <dd>
-              {place.avgRating} ({place.reviewCount}件)
-            </dd>
-          </dl>
-
-          <Button asChild size="sm" className="h-10 w-full gap-2">
-            <Link href={reviewHref} scroll={false}>
-              <PencilLine className="size-4" aria-hidden="true" />
-              レビューを書く
-            </Link>
-          </Button>
 
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
             <PlaceDetailExtras
-              category={place.category}
               placeId={place.id}
+              category={place.category}
+              price_range={place.price_range}
               reviewDetailHref={reviewDetailHref}
               reviewsHref={reviewsHref}
             />
           </Suspense>
         </div>
+        <Footer href={reviewHref} submitText="ビューを書く" />
       </div>
     </>
   );
@@ -385,7 +448,7 @@ export function PlaceDetailPanel({
 }: PlaceDetailPanelProps) {
   return (
     <HomePanelFrame title="お店詳細" closeHref={closeHref}>
-      {/* 장소 전환 시 이전 상세 내용이 남지 않도록 placeId를 Suspense key로 사용한다. */}
+      {/* 場所の切り替え時に以前の詳細内容が残らないよう、placeIdをSuspenseのkeyとして使用する。 */}
       <Suspense key={placeId} fallback={<PlaceDetailLoading />}>
         <PlaceDetailBody
           placeId={placeId}

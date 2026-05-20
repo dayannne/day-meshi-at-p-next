@@ -23,6 +23,7 @@ import {
   type ReviewFormMode,
   type ReviewFormPlaceInfo,
 } from "../hooks/useReviewForm";
+import { Footer } from "@/components/ui/Footer";
 
 interface ReviewFormProps {
   mode: ReviewFormMode;
@@ -358,23 +359,14 @@ export function ReviewForm({
       </div>
 
       {/* 7. フッターボタン */}
-      <div className="flex flex-none flex-row gap-2 border-t border-slate-200 bg-slate-50 p-4">
-        <Button variant="outline" className="h-11 flex-1 rounded-lg text-base" onClick={onClose}>
-          キャンセル
-        </Button>
-        <Button
-          className="bg-primary-linear h-11 flex-1 rounded-lg text-base text-white"
-          disabled={state.isSubmitDisabled}
-          onClick={() => handlers.onSubmit(onSuccess)}
-        >
-          {state.isPending ? "送信中..." : "レビューを投稿する"}
-        </Button>
-      </div>
-      {state.errors.submit && (
-        <p className="bg-slate-50 px-4 pb-4 text-sm font-medium text-red-500">
-          {state.errors.submit}
-        </p>
-      )}
+
+      <Footer
+        onCancel={onClose}
+        onSubmit={() => handlers.onSubmit(onClose)}
+        isPending={state.isPending}
+        submitText="レビューを投稿する"
+        submitError={state.errors.submit}
+      />
     </div>
   );
 }

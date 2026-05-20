@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ReviewForm } from "@/features/review/components/ReviewForm";
 import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
@@ -20,9 +20,11 @@ export function NewPlaceReviewPanelClient({
   page,
 }: NewPlaceReviewPanelClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const navigateToPlaceDetail = (placeId: string) => {
     router.replace(
-      buildPlacesHref({
+      buildPlacesHref(searchParams, {
         page,
         panel: PLACE_DETAIL_PANEL,
         placeId,
@@ -32,7 +34,7 @@ export function NewPlaceReviewPanelClient({
   };
   const navigateToExistingPlaceReview = (place: ExistingReviewPlaceMatch) => {
     router.replace(
-      buildPlacesHref({
+      buildPlacesHref(searchParams, {
         page,
         panel: EXISTING_PLACE_REVIEW_PANEL,
         placeId: place.id,

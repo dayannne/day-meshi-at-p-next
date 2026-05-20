@@ -16,16 +16,17 @@ type BuildPlacesHrefOptions = {
   reviewId?: string;
 };
 
-export function buildPlacesHref({
-  page,
-  panel,
-  placeId,
-  reviewId,
-}: BuildPlacesHrefOptions): string {
-  const params = new URLSearchParams({ page: String(page) });
+export function buildPlacesHref(
+  baseParams: string | URLSearchParams,
+  { page, panel, placeId, reviewId }: BuildPlacesHrefOptions
+): string {
+  const params = new URLSearchParams(baseParams);
+  params.set("page", String(page));
 
   if (panel) {
     params.set("panel", panel);
+  } else {
+    params.delete("panel");
   }
 
   if (
@@ -35,6 +36,8 @@ export function buildPlacesHref({
     placeId
   ) {
     params.set("placeId", placeId);
+  } else {
+    params.delete("placeId");
   }
 
   if (panel === PLACE_REVIEWS_PANEL && reviewId) {
