@@ -23,6 +23,9 @@ type ExplorePageProps = {
     placeId?: SearchParamValue;
     rating?: SearchParamValue;
     price?: SearchParamValue;
+    category?: SearchParamValue;
+    tags?: SearchParamValue;
+    gotimeshi?: SearchParamValue;
   }>;
 };
 
@@ -37,10 +40,16 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId } = await searchParams;
+  const { page, panel, placeId, rating, price, category, tags, gotimeshi } = await searchParams;
   const requestedPage = parsePageParam(page);
   const panelName = getFirstParam(panel);
   const selectedPlaceId = getFirstParam(placeId);
+  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+  const filterPrice = price ? Number(getFirstParam(price)) : null;
+  const filterCategories = Array.isArray(category) ? category : category ? [category] : [];
+  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
+
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
@@ -48,6 +57,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
+    rating: filterRating,
+    price: filterPrice,
+    categories: filterCategories,
+    tags: filterTags,
+    isGochimeshi: isGochimeshiSelected,
   });
   const closePanelHref = buildPlacesHref({ page: pagination.page });
   const newPlaceReviewHref = buildPlacesHref({

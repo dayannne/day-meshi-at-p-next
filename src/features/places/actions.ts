@@ -41,6 +41,11 @@ const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
 type GetPlacesActionParams = {
   page?: number;
   pageSize?: number;
+  rating?: number;
+  price?: number | null;
+  categories?: string[];
+  tags?: string[];
+  isGochimeshi?: boolean;
 };
 
 type PlacesPagination = {
@@ -151,6 +156,11 @@ function getReviewPreviewAuthorName(row: ReviewPreviewRow): string {
 export async function getPlacesAction({
   page,
   pageSize,
+  rating,
+  price,
+  categories,
+  tags,
+  isGochimeshi,
 }: GetPlacesActionParams = {}): Promise<GetPlacesActionResult> {
   const normalizedPage = normalizePositiveInteger(page, DEFAULT_PAGE);
   const normalizedPageSize = normalizePositiveInteger(pageSize, DEFAULT_PAGE_SIZE);
