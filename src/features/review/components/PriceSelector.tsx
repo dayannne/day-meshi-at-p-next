@@ -2,14 +2,7 @@
 import { TagButton } from "@/components/ui/TagButton";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-
-const PRICE_LEVELS = [
-  { value: 1, label: "〜¥1000" },
-  { value: 2, label: "¥1,000〜¥3,000" },
-  { value: 3, label: "¥3000〜¥5000" },
-  { value: 4, label: "¥5000〜¥10000" },
-  { value: 5, label: "¥10000〜" },
-];
+import { PRICE_LEVELS } from "@/components/google-maps/constants";
 
 interface PriceSelectorProps {
   value: number | null;

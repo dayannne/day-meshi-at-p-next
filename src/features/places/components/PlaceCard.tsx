@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Bookmark, MapPin, SportShoe, Star } from "lucide-react";
 import { Tag } from "@/components/ui/Tag";
 import Link from "next/link";
-import { getWalkingDurationMinutes } from "@/lib/utils";
+import { getPriceRangeLabel, getWalkingDurationMinutes } from "@/lib/utils";
 
 type Props = {
   place: Place;
@@ -69,7 +69,9 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
           <div className="inline-flex gap-1">
             {place.category && <Tag variant="primary">{place.category}</Tag>}
             {/* TODO : 価格帯タグデータ */}
-            {place.price_range && <Tag variant="neutral">{place.price_range}</Tag>}
+            {place.price_range && (
+              <Tag variant="neutral">{getPriceRangeLabel(place.price_range)}</Tag>
+            )}
             {place.isGochimeshi === true && <Tag variant="neutral">ごちめし可</Tag>}
           </div>
         </div>

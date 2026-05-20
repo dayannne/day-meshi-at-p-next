@@ -23,7 +23,7 @@ import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 import Image from "next/image";
 import { Footer } from "@/components/ui/Footer";
-import { cn } from "@/lib/utils";
+import { cn, getPriceRangeLabel } from "@/lib/utils";
 
 type PlaceDetailPanelProps = {
   closeHref: string;
@@ -160,18 +160,28 @@ function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails 
 function PopularReviewTagsSection({
   category,
   tags,
+  price_range,
 }: {
   category: string | null;
   tags: PlacePopularReviewTag[];
+  price_range: number | null;
 }) {
-  // カテゴリは1つ目のチップに固定し、レビューに基づいた人気タグをその後に続ける。
   return (
     <div className="flex flex-wrap gap-2">
       <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
         <span>{category ?? "カテゴリ未設定"}</span>
       </Tag>
+      {price_range && (
+        <Tag className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal" variant="neutral">
+          <span>{getPriceRangeLabel(price_range)}</span>
+        </Tag>
+      )}
       {tags.map((tag) => (
-        <Tag key={tag.id} className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal">
+        <Tag
+          key={tag.id}
+          className="h-auto min-h-6 max-w-full px-2.5 py-1 whitespace-normal"
+          variant="secondary"
+        >
           {tag.emoji ? <span>{tag.emoji}</span> : null}
           <span>{tag.name}</span>
         </Tag>
@@ -318,13 +328,15 @@ function PlaceNotFound({ placeId }: { placeId: string }) {
 }
 
 async function PlaceDetailExtras({
-  category,
   placeId,
+  category,
+  price_range,
   reviewDetailHref,
   reviewsHref,
 }: {
-  category: string | null;
   placeId: string;
+  category: string | null;
+  price_range: number | null;
   reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
@@ -337,7 +349,11 @@ async function PlaceDetailExtras({
 
   return (
     <>
-      <PopularReviewTagsSection category={category} tags={popularReviewTags} />
+      <PopularReviewTagsSection
+        category={category}
+        tags={popularReviewTags}
+        price_range={price_range}
+      />
       <BusinessInfoSection details={googleBusinessDetails} />
       <ReviewPreviewsSection
         reviews={reviewPreviews}
@@ -408,8 +424,9 @@ async function PlaceDetailBody({
 
           <Suspense fallback={<PlaceDetailExtrasLoading />}>
             <PlaceDetailExtras
-              category={place.category}
               placeId={place.id}
+              category={place.category}
+              price_range={place.price_range}
               reviewDetailHref={reviewDetailHref}
               reviewsHref={reviewsHref}
             />
