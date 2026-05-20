@@ -37,6 +37,8 @@ export interface ReviewFormPlaceInfo {
   reviewCount?: number;
   distanceFromOfficeMeters?: number | null;
   walkingDurationSeconds?: number | null;
+  isBookmarked?: boolean;
+  bookmarkCount?: number;
 }
 
 type SelectedPlaceInfo = SignedGooglePlaceDetails;

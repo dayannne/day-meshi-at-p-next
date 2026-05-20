@@ -106,6 +106,8 @@ function toPlaceCardPlace(place: ReviewFormSelectedPlace): Place {
     reviewCount: "reviewCount" in place ? (place.reviewCount ?? 0) : 0,
     distanceFromOfficeMeters: place.distanceFromOfficeMeters ?? null,
     walkingDurationSeconds: place.walkingDurationSeconds ?? null,
+    isBookmarked: "isBookmarked" in place ? (place.isBookmarked ?? false) : false,
+    bookmarkCount: "bookmarkCount" in place ? (place.bookmarkCount ?? 0) : 0,
   };
 }
 
