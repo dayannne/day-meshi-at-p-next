@@ -30,6 +30,7 @@ type ExplorePageProps = {
     category?: SearchParamValue;
     tags?: SearchParamValue;
     gotimeshi?: SearchParamValue;
+    keyword?: SearchParamValue;
   }>;
 };
 
@@ -61,7 +62,7 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId, reviewId, rating, price, category, tags, gotimeshi } =
+  const { page, panel, placeId, reviewId, keyword, rating, price, category, tags, gotimeshi } =
     await searchParams;
   const searchParamsObj = await searchParams;
   const baseParams = new URLSearchParams();
@@ -77,6 +78,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const panelName = getFirstParam(panel);
   const selectedPlaceId = getFirstParam(placeId);
   const selectedReviewId = getFirstParam(reviewId);
+  const selectedkeyward = keyword ? String(getFirstParam(keyword)) : undefined;
   const filterRating = rating ? Number(getFirstParam(rating)) : 0;
   const filterPrice = price ? Number(getFirstParam(price)) : null;
   const categories = Array.isArray(category) ? category : category ? [category] : [];
@@ -93,6 +95,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
+    keyword: selectedkeyward,
     rating: filterRating,
     price: filterPrice,
     categories: filterCategories,

@@ -43,6 +43,7 @@ const REVIEW_PAGE_SIZE = 10;
 type GetPlacesActionParams = {
   page?: number;
   pageSize?: number;
+  keyword?: string;
   rating?: number;
   price?: number | null;
   categories?: string[];
@@ -214,6 +215,7 @@ function getReviewTagLabel(row: ReviewTagRow): string | null {
 export async function getPlacesAction({
   page,
   pageSize,
+  keyword,
   rating,
   price,
   categories,
@@ -227,6 +229,10 @@ export async function getPlacesAction({
 
   const supabase = await createClient();
   let query = supabase.from("places").select(PLACES_SELECT_COLUMNS, { count: "exact" });
+
+  if (keyword && keyword.trim() !== "") {
+    query = query.ilike("name", `%${keyword.trim()}%`);
+  }
 
   if (rating && rating > 0) {
     query = query.gte("avg_rating", rating);
@@ -262,6 +268,7 @@ export async function getPlacesAction({
     return getPlacesAction({
       page: totalPages,
       pageSize: normalizedPageSize,
+      keyword,
       rating,
       price,
       categories,
