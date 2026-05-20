@@ -2,7 +2,8 @@
 
 import React from "react";
 
-import { LoaderCircle, Search, MapPin } from "lucide-react";
+import Image from "next/image";
+import { LoaderCircle, MapPin, Search, SportShoe } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -13,10 +14,14 @@ import { StarRating } from "@/features/review/components/StarRating";
 import { PriceSelector } from "./PriceSelector";
 import { CategorizedTags } from "@/features/tag/components/CategorizedTags";
 import type { TagGroup } from "@/features/tag/types";
+import { Tag } from "@/components/ui/Tag";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import type { GooglePlacePhotoAttribution } from "@/features/places/googlePlaces";
+import type { SignedGooglePlaceDetails } from "@/features/places/googlePlaces";
+import type { Place } from "@/features/places/types";
+import PlaceCard from "@/features/places/components/PlaceCard";
 import type { ExistingReviewPlaceMatch } from "@/features/review/actions";
+import { getWalkingDurationMinutes } from "@/lib/utils";
 
 import {
   useReviewForm,
@@ -38,6 +43,8 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <FormLabel className="m-0 text-sm font-bold">{children}</FormLabel>
 );
 
+type ReviewFormSelectedPlace = ReviewFormPlaceInfo | SignedGooglePlaceDetails;
+
 function formatDistance(distanceMeters: number | null) {
   if (distanceMeters === null) {
     return null;
@@ -48,63 +55,6 @@ function formatDistance(distanceMeters: number | null) {
   }
 
   return `${(distanceMeters / 1000).toFixed(1)}km`;
-}
-
-function formatDuration(durationSeconds: number | null | undefined) {
-  if (durationSeconds == null) {
-    return null;
-  }
-
-  const minutes = Math.max(1, Math.round(durationSeconds / 60));
-
-  return `${minutes}分`;
-}
-
-function normalizeAttributionUrl(uri: string | null) {
-  if (!uri) {
-    return null;
-  }
-
-  if (uri.startsWith("//")) {
-    return `https:${uri}`;
-  }
-
-  return uri;
-}
-
-function PhotoAttributions({ attributions }: { attributions: GooglePlacePhotoAttribution[] }) {
-  if (attributions.length === 0) {
-    return null;
-  }
-
-  return (
-    <p className="text-xs leading-snug text-slate-500">
-      Photo:{" "}
-      {attributions.map((attribution, index) => {
-        const href = normalizeAttributionUrl(attribution.uri);
-        const separator = index > 0 ? ", " : "";
-
-        return href ? (
-          <React.Fragment key={`${attribution.displayName}-${index}`}>
-            {separator}
-            <a
-              href={href}
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-2"
-            >
-              {attribution.displayName}
-            </a>
-          </React.Fragment>
-        ) : (
-          <React.Fragment key={`${attribution.displayName}-${index}`}>
-            {separator}
-            {attribution.displayName}
-          </React.Fragment>
-        );
-      })}
-    </p>
-  );
 }
 
 function ExistingPlaceMatchPrompt({
@@ -131,6 +81,99 @@ function ExistingPlaceMatchPrompt({
         <Button type="button" variant="outline" size="sm" className="h-9 flex-1" onClick={onCancel}>
           別のお店を探す
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function toPlaceCardPlace(place: ReviewFormSelectedPlace): Place {
+  const id = "id" in place ? place.id : place.googlePlaceId;
+  const lat = typeof place.lat === "number" ? place.lat : 0;
+  const lng = typeof place.lng === "number" ? place.lng : 0;
+
+  return {
+    id,
+    googlePlaceId: place.googlePlaceId ?? id,
+    name: place.name,
+    category: place.category ?? null,
+    price_range: "price_range" in place ? (place.price_range ?? null) : null,
+    lat,
+    lng,
+    imageUrl: place.imageUrl ?? null,
+    photoAttributions: place.photoAttributions ?? [],
+    isGochimeshi: "isGochimeshi" in place ? (place.isGochimeshi ?? false) : false,
+    avgRating: "avgRating" in place ? (place.avgRating ?? 0) : 0,
+    reviewCount: "reviewCount" in place ? (place.reviewCount ?? 0) : 0,
+    distanceFromOfficeMeters: place.distanceFromOfficeMeters ?? null,
+    walkingDurationSeconds: place.walkingDurationSeconds ?? null,
+  };
+}
+
+function ReviewFormPlaceCard({
+  place,
+  hideBookmark = false,
+}: {
+  place: ReviewFormSelectedPlace;
+  hideBookmark?: boolean;
+}) {
+  const cardPlace = toPlaceCardPlace(place);
+  const preventCardNavigation: React.MouseEventHandler<HTMLAnchorElement> = (event) => {
+    event.preventDefault();
+  };
+
+  return (
+    <ul
+      className={`list-none p-0 [&_a]:cursor-default ${hideBookmark ? "[&_button]:hidden" : ""}`}
+      onClickCapture={(event) => event.preventDefault()}
+    >
+      <PlaceCard
+        place={cardPlace}
+        isSelected={false}
+        onClick={preventCardNavigation}
+        placeDetailHref="#"
+      />
+    </ul>
+  );
+}
+
+function NewPlaceReviewFormCard({ place }: { place: ReviewFormSelectedPlace }) {
+  const address = place.address?.trim() || "住所未設定";
+  const distance = formatDistance(place.distanceFromOfficeMeters ?? null) ?? "-";
+  const walkingDurationMinutes = getWalkingDurationMinutes(place.walkingDurationSeconds);
+
+  return (
+    <div className="flex w-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+      {place.imageUrl ? (
+        <Image
+          src={place.imageUrl}
+          alt="お店の写真"
+          width={96}
+          height={96}
+          className="aspect-square shrink-0 rounded-lg object-cover"
+        />
+      ) : (
+        <div className="flex size-24 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+          <MapPin className="size-7" aria-hidden="true" />
+          <span className="sr-only">お店の写真なし</span>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="min-w-0">
+          <p className="line-clamp-1 text-left text-lg font-semibold break-words text-slate-950">
+            {place.name}
+          </p>
+          <div className="mt-1 flex items-start gap-1.5 text-slate-500">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <p className="line-clamp-2 text-sm leading-snug break-words">{address}</p>
+          </div>
+        </div>
+
+        {place.category ? (
+          <div className="inline-flex gap-1">
+            <Tag variant="primary">{place.category}</Tag>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -164,7 +207,7 @@ export function ReviewForm({
   return (
     <div className="flex h-full flex-col">
       {/* フォーム中身：スクロールエリア */}
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
         {/* 1. お店検索エリア */}
         {isNewShop && (
           <div className="space-y-2">
@@ -245,48 +288,13 @@ export function ReviewForm({
         )}
 
         {/* 2. 店舗情報表示 */}
-        {state.selectedPlace && (
-          <div className="border-primary flex flex-col gap-4 rounded-xl border px-4 py-5 shadow-sm">
-            {state.selectedPlace.imageUrl && (
-              <div className="flex flex-col gap-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={state.selectedPlace.imageUrl}
-                  alt=""
-                  className="aspect-4/3 w-full rounded-lg object-cover"
-                />
-                <PhotoAttributions attributions={state.selectedPlace.photoAttributions ?? []} />
-              </div>
-            )}
-            <div className="flex flex-col gap-3">
-              <h2 className="text-primary text-base leading-none font-bold">
-                {state.selectedPlace.name}
-              </h2>
-              <div className="flex items-center gap-2 text-slate-500">
-                <MapPin size={16} className="text-primary shrink-0" strokeWidth={1.5} />
-                <p className="text-sm leading-snug font-medium">
-                  {state.selectedPlace.address ?? "-"}
-                </p>
-              </div>
-            </div>
-            <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-2 text-xs text-slate-600">
-              <dt className="font-bold text-slate-900">google_place_id</dt>
-              <dd className="break-all">{state.selectedPlace.googlePlaceId ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">category</dt>
-              <dd>{state.selectedPlace.category ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">lat</dt>
-              <dd>{state.selectedPlace.lat ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">lng</dt>
-              <dd>{state.selectedPlace.lng ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">image_url</dt>
-              <dd className="break-all">{state.selectedPlace.imageUrl ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">distance</dt>
-              <dd>{formatDistance(state.selectedPlace.distanceFromOfficeMeters ?? null) ?? "-"}</dd>
-              <dt className="font-bold text-slate-900">walking</dt>
-              <dd>{formatDuration(state.selectedPlace.walkingDurationSeconds) ?? "-"}</dd>
-            </dl>
-          </div>
-        )}
+        {state.selectedPlace ? (
+          isNewShop ? (
+            <NewPlaceReviewFormCard place={state.selectedPlace} />
+          ) : (
+            <ReviewFormPlaceCard place={state.selectedPlace} hideBookmark />
+          )
+        ) : null}
 
         {/* 3. レート選択 */}
         <FormItem className="flex flex-col gap-3">
@@ -362,8 +370,9 @@ export function ReviewForm({
 
       <Footer
         onCancel={onClose}
-        onSubmit={() => handlers.onSubmit(onClose)}
+        onSubmit={() => handlers.onSubmit(onSuccess)}
         isPending={state.isPending}
+        disabled={state.isSubmitDisabled}
         submitText="レビューを投稿する"
         submitError={state.errors.submit}
       />
