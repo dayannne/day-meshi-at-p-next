@@ -29,6 +29,23 @@ type ExplorePageProps = {
   }>;
 };
 
+const GOOGLE_PLACE_CATEGORIES = {
+  CAFE: "カフェ",
+  SUSHI: "寿司",
+  RAMEN: "ラーメン",
+  CHINESE: "中華",
+  CURRY: "カレー",
+  IZAKAYA: "居酒屋",
+  SWEETS: "スイーツ",
+  BAR: "バー",
+  JAPANESE: "和食",
+  YAKINIKU: "焼肉",
+  WESTERN: "洋食",
+  FAST_FOOD: "ファストフード",
+  ASIAN: "アジア",
+  OTHERS: "その他",
+};
+
 function getFirstParam(value: SearchParamValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -46,7 +63,10 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   const selectedPlaceId = getFirstParam(placeId);
   const filterRating = rating ? Number(getFirstParam(rating)) : 0;
   const filterPrice = price ? Number(getFirstParam(price)) : null;
-  const filterCategories = Array.isArray(category) ? category : category ? [category] : [];
+  const categories = Array.isArray(category) ? category : category ? [category] : [];
+  const filterCategories = categories.map(
+    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+  );
   const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
   const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
 

@@ -168,14 +168,32 @@ export async function getPlacesAction({
   const to = from + normalizedPageSize - 1;
 
   const supabase = await createClient();
-  const { data, error, count } = await supabase
-    .from("places")
-    .select(PLACES_SELECT_COLUMNS, { count: "exact" })
+  let query = supabase.from("places").select(PLACES_SELECT_COLUMNS, { count: "exact" });
+
+  if (rating && rating > 0) {
+    query = query.gte("avg_rating", rating);
+  }
+  if (price !== undefined && price !== null) {
+    query = query.eq("price_range", price);
+  }
+  if (categories && categories.length > 0) {
+    query = query.in("category", categories);
+  }
+  if (isGochimeshi === true) {
+    query = query.eq("is_gochimeshi", true);
+  }
+  if (tags && tags.length > 0) {
+    query = query.select(`${PLACES_SELECT_COLUMNS}, reviews!inner(review_tags!inner(tag_id))`);
+    query = query.in("reviews.review_tags.tag_id", tags);
+  }
+
+  const { data, error, count } = await query
     .order("avg_rating", { ascending: false })
     .order("id", { ascending: true })
     .range(from, to);
 
   if (error) {
+    console.error("【Supabaseデバッグ】エラーの全貌:", error);
     throw new Error("Failed to load places.");
   }
 
@@ -186,6 +204,11 @@ export async function getPlacesAction({
     return getPlacesAction({
       page: totalPages,
       pageSize: normalizedPageSize,
+      rating,
+      price,
+      categories,
+      tags,
+      isGochimeshi,
     });
   }
 
