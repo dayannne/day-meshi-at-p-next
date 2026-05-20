@@ -134,7 +134,7 @@ export function PlaceReviewsPanelClient({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-0 justify-start gap-2 px-0 text-xs"
+            className="h-0 w-fit justify-start gap-2 self-start px-0 text-xs"
             onClick={showReviewList}
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
@@ -145,7 +145,7 @@ export function PlaceReviewsPanelClient({
             asChild
             variant="ghost"
             size="sm"
-            className="h-0 justify-start gap-2 px-0 text-xs"
+            className="h-0 w-fit justify-start gap-2 self-start px-0 text-xs"
           >
             <Link href={detailHref} scroll={false}>
               <ArrowLeft className="size-4" aria-hidden="true" />
