@@ -33,6 +33,18 @@ export type PlaceReviewPreview = {
   date: string;
 };
 
+export type PlaceReview = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  tags: string[];
+  initialLikeCount: number;
+  initialIsLiked: boolean;
+};
+
 export type PlaceGoogleBusinessStatus =
   | "BUSINESS_STATUS_UNSPECIFIED"
   | "OPERATIONAL"

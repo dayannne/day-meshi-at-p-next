@@ -4,11 +4,13 @@ import { toPlaceMarkers } from "@/features/places/placeMarkers";
 import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
 import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
+import { PlaceReviewsPanel } from "./_panel/PlaceReviewsPanel";
 import {
   buildPlacesHref,
   EXISTING_PLACE_REVIEW_PANEL,
   NEW_PLACE_REVIEW_PANEL,
   PLACE_DETAIL_PANEL,
+  PLACE_REVIEWS_PANEL,
 } from "./_panel/panelLinks";
 import { ExploreLeftPanel } from "@/features/places/components/ExploreLeftPanel";
 
@@ -21,6 +23,7 @@ type ExplorePageProps = {
     page?: SearchParamValue;
     panel?: SearchParamValue;
     placeId?: SearchParamValue;
+    reviewId?: SearchParamValue;
     rating?: SearchParamValue;
     price?: SearchParamValue;
     category?: SearchParamValue;
@@ -57,23 +60,25 @@ function parsePageParam(value: SearchParamValue): number {
 }
 
 export default async function ExplorePage({ searchParams }: ExplorePageProps) {
-  const { page, panel, placeId, rating, price, category, tags, gotimeshi } = await searchParams;
-  const requestedPage = parsePageParam(page);
-  const panelName = getFirstParam(panel);
-  const selectedPlaceId = getFirstParam(placeId);
-  const filterRating = rating ? Number(getFirstParam(rating)) : 0;
-  const filterPrice = price ? Number(getFirstParam(price)) : null;
-  const categories = Array.isArray(category) ? category : category ? [category] : [];
-  const filterCategories = categories.map(
-    (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
-  );
-  const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
-  const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
-
+const { page, panel, placeId, reviewId, rating, price, category, tags, gotimeshi } =
+  await searchParams;
+const requestedPage = parsePageParam(page);
+const panelName = getFirstParam(panel);
+const selectedPlaceId = getFirstParam(placeId);
+const selectedReviewId = getFirstParam(reviewId);
+const filterRating = rating ? Number(getFirstParam(rating)) : 0;
+const filterPrice = price ? Number(getFirstParam(price)) : null;
+const categories = Array.isArray(category) ? category : category ? [category] : [];
+const filterCategories = categories.map(
+  (key) => GOOGLE_PLACE_CATEGORIES[key as keyof typeof GOOGLE_PLACE_CATEGORIES] || key
+);
+const filterTags = Array.isArray(tags) ? tags : tags ? [tags] : [];
+const isGochimeshiSelected = getFirstParam(gotimeshi) === "true";
   const isNewPlaceReviewPanel = panelName === NEW_PLACE_REVIEW_PANEL;
   const isPlaceDetailPanel = panelName === PLACE_DETAIL_PANEL && Boolean(selectedPlaceId);
   const isExistingPlaceReviewPanel =
     panelName === EXISTING_PLACE_REVIEW_PANEL && Boolean(selectedPlaceId);
+  const isPlaceReviewsPanel = panelName === PLACE_REVIEWS_PANEL && Boolean(selectedPlaceId);
   const { places, pagination } = await getPlacesAction({
     page: requestedPage,
     pageSize: PLACES_PAGE_SIZE,
@@ -100,6 +105,19 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       panel: EXISTING_PLACE_REVIEW_PANEL,
       placeId,
     });
+  const buildPlaceReviewsHref = (placeId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+    });
+  const buildPlaceReviewDetailHref = (placeId: string, reviewId: string) =>
+    buildPlacesHref({
+      page: pagination.page,
+      panel: PLACE_REVIEWS_PANEL,
+      placeId,
+      reviewId,
+    });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
@@ -108,7 +126,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     href: placeDetailHrefs[marker.id],
   }));
   const selectedMarkerId =
-    isPlaceDetailPanel || isExistingPlaceReviewPanel ? selectedPlaceId : null;
+    isPlaceDetailPanel || isExistingPlaceReviewPanel || isPlaceReviewsPanel
+      ? selectedPlaceId
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
@@ -130,6 +150,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           placeId={selectedPlaceId}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
+          reviewDetailHref={(reviewId) => buildPlaceReviewDetailHref(selectedPlaceId, reviewId)}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
       {isExistingPlaceReviewPanel && selectedPlaceId ? (
@@ -137,6 +159,15 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
           closeHref={closePanelHref}
           detailHref={buildPlaceDetailHref(selectedPlaceId)}
           placeId={selectedPlaceId}
+        />
+      ) : null}
+      {isPlaceReviewsPanel && selectedPlaceId ? (
+        <PlaceReviewsPanel
+          closeHref={closePanelHref}
+          detailHref={buildPlaceDetailHref(selectedPlaceId)}
+          initialReviewId={selectedReviewId}
+          placeId={selectedPlaceId}
+          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
         />
       ) : null}
     </div>

@@ -61,6 +61,39 @@ export type FindPlaceIdByGooglePlaceIdResult =
       error: string;
     };
 
+export async function toggleReviewLikeAction(reviewId: string, shouldLike: boolean): Promise<void> {
+  const user = await requireActiveUser();
+  const normalizedReviewId = reviewId.trim();
+
+  if (!normalizedReviewId) {
+    throw new Error("レビューが見つかりませんでした。");
+  }
+
+  const supabase = await createClient();
+  const { error } = shouldLike
+    ? await supabase.from("review_likes").upsert(
+        {
+          user_id: user.userId,
+          review_id: normalizedReviewId,
+        },
+        {
+          onConflict: "user_id,review_id",
+          ignoreDuplicates: true,
+        }
+      )
+    : await supabase
+        .from("review_likes")
+        .delete()
+        .eq("user_id", user.userId)
+        .eq("review_id", normalizedReviewId);
+
+  if (error) {
+    throw new Error("いいねの更新に失敗しました。");
+  }
+
+  revalidatePath("/home/places");
+}
+
 function isRating(value: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= 5;
 }

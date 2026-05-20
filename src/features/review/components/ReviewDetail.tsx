@@ -13,7 +13,7 @@ interface ReviewDetailProps {
   name?: string; // shop-detailモードの時はユーザー名
   place?: string; // my-reviewモードの時は店名
   rating: number;
-  date: Date;
+  date: Date | string;
   comment: string;
   tags: string[];
 
@@ -51,7 +51,7 @@ export const ReviewDetail = ({
   const isOwner = currentUserId === authorId;
 
   return (
-    <div className="relative flex flex-col gap-6 p-6">
+    <div className="relative flex flex-col gap-6 px-6 py-3">
       {/* 1. ヘッダー：モードによって出し分け */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -76,7 +76,9 @@ export const ReviewDetail = ({
       </div>
 
       {/* 3. コメントエリア */}
-      <p className="text-base leading-relaxed break-words text-slate-700">{comment}</p>
+      <p className="text-base leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+        {comment}
+      </p>
 
       {/* 4. タグエリア */}
       <div className="flex flex-wrap gap-2">
@@ -88,7 +90,7 @@ export const ReviewDetail = ({
       </div>
 
       {/* 5. フッター：いいね ＆ 削除アクション */}
-      <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-4">
+      <div className="flex items-center justify-between border-t border-slate-50 pt-4">
         {/* 子コンポーネントがすべてのロジックを持ってくれているので、渡すだけで完結 */}
         <LikeButton
           reviewId={id}
