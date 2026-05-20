@@ -5,6 +5,7 @@ import { Bookmark, MapPin, SportShoe, Star } from "lucide-react";
 import { Tag } from "@/components/ui/Tag";
 import Link from "next/link";
 import { getPriceRangeLabel, getWalkingDurationMinutes } from "@/lib/utils";
+import { BookmarkButton } from "./BookmarkButton";
 
 type Props = {
   place: Place;
@@ -46,14 +47,11 @@ export default function PlaceCard({ place, isSelected, onClick, placeDetailHref 
             <p className="wrab-break-words line-clamp-1 min-w-0 flex-1 text-left text-lg font-semibold">
               {place.name}
             </p>
-            <button
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <Bookmark className="h-4 w-4 text-slate-600" />
-            </button>
+            <BookmarkButton
+              placeId={place.id}
+              isBookmarked={place.isBookmarked}
+              className="-mr-1"
+            />
           </div>
           <div className="inline-flex items-center gap-2">
             <div className="inline-flex items-center gap-1">

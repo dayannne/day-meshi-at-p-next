@@ -24,6 +24,7 @@ import { HomePanelFrame } from "../../_panel/HomePanelFrame";
 import Image from "next/image";
 import { Footer } from "@/components/ui/Footer";
 import { cn, getPriceRangeLabel } from "@/lib/utils";
+import { BookmarkButton } from "@/features/places/components/BookmarkButton";
 
 type PlaceDetailPanelProps = {
   closeHref: string;
@@ -106,8 +107,18 @@ function getBusinessStatus(details: PlaceGoogleBusinessDetails) {
   }
 }
 
-function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails | null }) {
-  // Google Placesから取得する営業情報エリア。基本の場所情報より後にロードされる場合がある。
+function BusinessInfoSection({
+  details,
+  placeId,
+  isBookmarked,
+  bookmarkCount,
+}: {
+  details: PlaceGoogleBusinessDetails | null;
+  placeId: string;
+  isBookmarked: boolean;
+  bookmarkCount: number;
+}) {
+  // Google Placesから取得する営業情報エリア。基本의場所情報より後にロードされる場合がある。
 
   if (!details) return <></>;
 
@@ -142,13 +153,27 @@ function BusinessInfoSection({ details }: { details: PlaceGoogleBusinessDetails 
               </p>
             </div>
           </div>
-          {details.googleMapsUri ? (
-            <Button asChild variant="outline" size="sm" className="h-9 w-full">
-              <a href={details.googleMapsUri} target="_blank" rel="noreferrer">
-                Google マップで開く
-              </a>
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            <BookmarkButton
+              placeId={placeId}
+              isBookmarked={isBookmarked}
+              bookmarkCount={bookmarkCount}
+              variant="extended"
+            />
+
+            {details.googleMapsUri ? (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="flex-1 border-slate-200 text-slate-500"
+              >
+                <a href={details.googleMapsUri} target="_blank" rel="noreferrer">
+                  Google マップで開く
+                </a>
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : (
         <p className="mt-3 text-sm text-slate-500">Google Mapsの店舗情報を取得できませんでした。</p>
@@ -331,16 +356,20 @@ async function PlaceDetailExtras({
   placeId,
   category,
   price_range,
+  isBookmarked,
+  bookmarkCount,
   reviewDetailHref,
   reviewsHref,
 }: {
   placeId: string;
   category: string | null;
   price_range: number | null;
+  isBookmarked: boolean;
+  bookmarkCount: number;
   reviewDetailHref: (reviewId: string) => string;
   reviewsHref: string;
 }) {
-  // 付加情報は基本情報の表示後に並列でロードし、パネルの初回表示を妨げないようにする。
+  // 付加情報(Google情報/タグ/レビュー)는並列でロードする。
   const [googleBusinessDetails, popularReviewTags, reviewPreviews] = await Promise.all([
     getPlaceGoogleBusinessDetailsAction(placeId),
     getPlacePopularReviewTagsAction(placeId),
@@ -354,7 +383,12 @@ async function PlaceDetailExtras({
         tags={popularReviewTags}
         price_range={price_range}
       />
-      <BusinessInfoSection details={googleBusinessDetails} />
+      <BusinessInfoSection
+        details={googleBusinessDetails}
+        placeId={placeId}
+        isBookmarked={isBookmarked}
+        bookmarkCount={bookmarkCount}
+      />
       <ReviewPreviewsSection
         reviews={reviewPreviews}
         reviewDetailHref={reviewDetailHref}
@@ -427,6 +461,8 @@ async function PlaceDetailBody({
               placeId={place.id}
               category={place.category}
               price_range={place.price_range}
+              isBookmarked={place.isBookmarked}
+              bookmarkCount={place.bookmarkCount}
               reviewDetailHref={reviewDetailHref}
               reviewsHref={reviewsHref}
             />

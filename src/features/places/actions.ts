@@ -16,6 +16,7 @@ import { requireActiveUser } from "@/features/auth/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 const PLACES_SELECT_COLUMNS = `
   id,
@@ -31,7 +32,8 @@ const PLACES_SELECT_COLUMNS = `
   avg_rating,
   review_count,
   distance_from_office_meters,
-  walking_duration_seconds
+  walking_duration_seconds,
+  place_bookmarks!left(user_id)
 `;
 
 const DEFAULT_PAGE = 1;
@@ -151,22 +153,32 @@ function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
     .filter((attribution): attribution is GooglePlacePhotoAttribution => attribution !== null);
 }
 
-function toPlace(place: {
-  id: string;
-  google_place_id: string;
-  name: string;
-  category: string | null;
-  price_range: number | null;
-  lat: number;
-  lng: number;
-  image_url: string | null;
-  photo_attributions: Json;
-  is_gochimeshi: boolean;
-  avg_rating: number;
-  review_count: number;
-  distance_from_office_meters: number | null;
-  walking_duration_seconds: number | null;
-}): Place {
+function toPlace(
+  place: {
+    id: string;
+    google_place_id: string;
+    name: string;
+    category: string | null;
+    price_range: number | null;
+    lat: number;
+    lng: number;
+    image_url: string | null;
+    photo_attributions: Json;
+    is_gochimeshi: boolean;
+    avg_rating: number;
+    review_count: number;
+    distance_from_office_meters: number | null;
+    walking_duration_seconds: number | null;
+    place_bookmarks?: { user_id: string }[] | { user_id: string } | null;
+  },
+  currentUserId?: string
+): Place {
+  const bookmarks = Array.isArray(place.place_bookmarks)
+    ? place.place_bookmarks
+    : place.place_bookmarks
+      ? [place.place_bookmarks]
+      : [];
+
   return {
     id: place.id,
     googlePlaceId: place.google_place_id,
@@ -182,6 +194,8 @@ function toPlace(place: {
     reviewCount: place.review_count,
     distanceFromOfficeMeters: place.distance_from_office_meters,
     walkingDurationSeconds: place.walking_duration_seconds,
+    isBookmarked: currentUserId ? bookmarks.some((b) => b.user_id === currentUserId) : false,
+    bookmarkCount: bookmarks.length,
   };
 }
 
@@ -277,8 +291,9 @@ export async function getPlacesAction({
     });
   }
 
+  const { userId } = await requireActiveUser();
   return {
-    places: data.map(toPlace),
+    places: data.map((p) => toPlace(p, userId)),
     pagination: {
       page: normalizedPage,
       pageSize: normalizedPageSize,
@@ -297,6 +312,7 @@ export async function getPlaceAction(placeId: string): Promise<Place | null> {
     return null;
   }
 
+  const { userId } = await requireActiveUser();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("places")
@@ -308,7 +324,7 @@ export async function getPlaceAction(placeId: string): Promise<Place | null> {
     throw new Error("Failed to load place.");
   }
 
-  return data ? toPlace(data) : null;
+  return data ? toPlace(data, userId) : null;
 }
 
 export async function getPlacePopularReviewTagsAction(
@@ -526,4 +542,35 @@ export async function getPlaceGoogleBusinessDetailsAction(
   }
 
   return fetchNullableGoogleBusinessDetails(place.google_place_id);
+}
+
+export async function toggleBookmarkAction(placeId: string, isBookmarked: boolean) {
+  const { userId } = await requireActiveUser();
+  const supabase = await createClient();
+
+  if (isBookmarked) {
+    // 解除
+    const { error } = await supabase
+      .from("place_bookmarks")
+      .delete()
+      .eq("place_id", placeId)
+      .eq("user_id", userId);
+
+    if (error) {
+      throw new Error("Failed to remove bookmark.");
+    }
+  } else {
+    // 登録
+    const { error } = await supabase
+      .from("place_bookmarks")
+      .insert({ place_id: placeId, user_id: userId });
+
+    if (error && error.code !== "23505") {
+      // 23505: unique_violation
+      throw new Error("Failed to add bookmark.");
+    }
+  }
+
+  revalidatePath("/home/places", "page");
+  revalidatePath("/home/bookmarks", "page");
 }

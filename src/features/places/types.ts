@@ -15,6 +15,8 @@ export type Place = {
   reviewCount: number;
   distanceFromOfficeMeters: number | null;
   walkingDurationSeconds: number | null;
+  isBookmarked: boolean;
+  bookmarkCount: number;
 };
 
 export type PlacePopularReviewTag = {
