@@ -89,6 +89,7 @@ type PlaceReviewRow = {
   id: string;
   user_id: string;
   rating: number;
+  price_range: number | null;
   comment: string | null;
   created_at: string;
 } & ReviewAuthorRow;
@@ -355,7 +356,7 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
     id: review.id,
     authorName: getReviewAuthorName(review),
     rating: review.rating,
-    comment: review.comment?.trim() || "コメントなし",
+    comment: review.comment?.trim() || "",
     date: review.created_at,
   }));
 }
@@ -386,6 +387,7 @@ export async function getPlaceReviewsAction(
         id,
         user_id,
         rating,
+        price_range,
         comment,
         created_at,
         profiles!reviews_user_id_fkey (
@@ -480,7 +482,8 @@ export async function getPlaceReviewsAction(
       authorId: review.user_id,
       authorName: getReviewAuthorName(review),
       rating: review.rating,
-      comment: review.comment?.trim() || "コメントなし",
+      priceRange: review.price_range,
+      comment: review.comment?.trim() || "",
       date: review.created_at,
       tags: tagsByReviewId.get(review.id) ?? [],
       initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,

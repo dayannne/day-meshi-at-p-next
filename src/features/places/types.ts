@@ -38,6 +38,7 @@ export type PlaceReview = {
   authorId: string;
   authorName: string;
   rating: number;
+  priceRange: number | null;
   comment: string;
   date: string;
   tags: string[];

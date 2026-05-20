@@ -213,6 +213,7 @@ export function PlaceReviewsPanelClient({
             mode="shop-detail"
             name={selectedReview.authorName}
             rating={selectedReview.rating}
+            priceRange={selectedReview.priceRange}
             date={selectedReview.date}
             comment={selectedReview.comment}
             tags={selectedReview.tags}

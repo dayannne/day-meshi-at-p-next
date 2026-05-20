@@ -37,9 +37,9 @@ export const GOCHIMESHI_MARKER_Z_INDEX = 10;
 export const NON_GOCHIMESHI_MARKER_Z_INDEX = 1;
 
 export const PRICE_LEVELS = [
-  { value: 1, label: "〜¥1000" },
+  { value: 1, label: "〜¥1,000" },
   { value: 2, label: "¥1,000〜¥3,000" },
-  { value: 3, label: "¥3000〜¥5000" },
-  { value: 4, label: "¥5000〜¥10000" },
-  { value: 5, label: "¥10000〜" },
+  { value: 3, label: "¥3,000〜¥5,000" },
+  { value: 4, label: "¥5,000〜¥10,000" },
+  { value: 5, label: "¥10,000〜" },
 ];

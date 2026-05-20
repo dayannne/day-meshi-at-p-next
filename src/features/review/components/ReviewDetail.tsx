@@ -4,6 +4,7 @@ import { Trash2, User } from "lucide-react";
 import { StarRating } from "@/features/review/components/StarRating";
 import { LikeButton } from "@/features/review/components/LikeButton";
 import { Tag } from "@/components/ui/Tag";
+import { getPriceRangeLabel } from "@/lib/utils";
 
 interface ReviewDetailProps {
   id: string;
@@ -13,6 +14,7 @@ interface ReviewDetailProps {
   name?: string; // shop-detailモードの時はユーザー名
   place?: string; // my-reviewモードの時は店名
   rating: number;
+  priceRange?: number | null;
   date: Date | string;
   comment: string;
   tags: string[];
@@ -34,6 +36,7 @@ export const ReviewDetail = ({
   name,
   place,
   rating,
+  priceRange,
   date,
   comment,
   tags,
@@ -82,6 +85,7 @@ export const ReviewDetail = ({
 
       {/* 4. タグエリア */}
       <div className="flex flex-wrap gap-2">
+        {priceRange ? <Tag variant="neutral">{getPriceRangeLabel(priceRange)}</Tag> : null}
         {tags.map((tag) => (
           <Tag key={tag} variant="primary">
             {tag}
