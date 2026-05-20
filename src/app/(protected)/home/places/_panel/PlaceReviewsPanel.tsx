@@ -47,7 +47,7 @@ async function PlaceReviewsBody({
   placeId,
   reviewsHref,
 }: Pick<PlaceReviewsPanelProps, "detailHref" | "initialReviewId" | "placeId" | "reviewsHref">) {
-  const [place, reviews] = await Promise.all([
+  const [place, reviewsPage] = await Promise.all([
     getPlaceAction(placeId),
     getPlaceReviewsAction(placeId),
   ]);
@@ -66,10 +66,14 @@ async function PlaceReviewsBody({
       <MapMarkersSync source="place-detail" markers={[marker]} selectedMarkerId={place.id} />
       <PlaceReviewsPanelClient
         detailHref={detailHref}
+        hasMore={reviewsPage.hasMore}
         initialReviewId={initialReviewId}
+        nextOffset={reviewsPage.nextOffset}
         placeName={place.name}
-        reviews={reviews}
+        placeId={place.id}
+        reviews={reviewsPage.reviews}
         reviewsHref={reviewsHref}
+        totalReviewCount={place.reviewCount}
       />
     </>
   );

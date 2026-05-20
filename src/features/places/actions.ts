@@ -38,6 +38,7 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const POPULAR_REVIEW_TAGS_LIMIT = 4;
 const PLACE_REVIEW_PREVIEWS_LIMIT = 3;
+const REVIEW_PAGE_SIZE = 10;
 
 type GetPlacesActionParams = {
   page?: number;
@@ -47,6 +48,11 @@ type GetPlacesActionParams = {
   categories?: string[];
   tags?: string[];
   isGochimeshi?: boolean;
+};
+
+type GetPlaceReviewsActionParams = {
+  offset?: number;
+  limit?: number;
 };
 
 type PlacesPagination = {
@@ -61,6 +67,12 @@ type PlacesPagination = {
 type GetPlacesActionResult = {
   places: Place[];
   pagination: PlacesPagination;
+};
+
+export type GetPlaceReviewsActionResult = {
+  reviews: PlaceReview[];
+  hasMore: boolean;
+  nextOffset: number;
 };
 
 type ReviewPreviewRow = {
@@ -103,6 +115,10 @@ type ReviewLikeRow = {
 
 function normalizePositiveInteger(value: number | undefined, fallback: number): number {
   return Number.isInteger(value) && value && value > 0 ? value : fallback;
+}
+
+function normalizeNonNegativeInteger(value: number | undefined, fallback: number): number {
+  return Number.isInteger(value) && value !== undefined && value >= 0 ? value : fallback;
 }
 
 function toPhotoAttributions(value: Json): GooglePlacePhotoAttribution[] {
@@ -341,13 +357,22 @@ export async function getPlaceReviewPreviewsAction(placeId: string): Promise<Pla
   }));
 }
 
-export async function getPlaceReviewsAction(placeId: string): Promise<PlaceReview[]> {
+export async function getPlaceReviewsAction(
+  placeId: string,
+  { offset, limit }: GetPlaceReviewsActionParams = {}
+): Promise<GetPlaceReviewsActionResult> {
   const normalizedPlaceId = placeId.trim();
 
   if (!normalizedPlaceId) {
-    return [];
+    return {
+      reviews: [],
+      hasMore: false,
+      nextOffset: 0,
+    };
   }
 
+  const normalizedOffset = normalizeNonNegativeInteger(offset, 0);
+  const normalizedLimit = normalizePositiveInteger(limit, REVIEW_PAGE_SIZE);
   const user = await requireActiveUser();
   const admin = createAdminClient();
   const { data: reviews, error: reviewsError } = await admin
@@ -366,16 +391,23 @@ export async function getPlaceReviewsAction(placeId: string): Promise<PlaceRevie
     )
     .eq("place_id", normalizedPlaceId)
     .order("created_at", { ascending: false })
-    .order("id", { ascending: true });
+    .order("id", { ascending: true })
+    .range(normalizedOffset, normalizedOffset + normalizedLimit);
 
   if (reviewsError) {
     throw new Error("Failed to load place reviews.");
   }
 
-  const reviewRows = (reviews ?? []) as PlaceReviewRow[];
+  const fetchedReviewRows = (reviews ?? []) as PlaceReviewRow[];
+  const hasMore = fetchedReviewRows.length > normalizedLimit;
+  const reviewRows = fetchedReviewRows.slice(0, normalizedLimit);
 
   if (reviewRows.length === 0) {
-    return [];
+    return {
+      reviews: [],
+      hasMore: false,
+      nextOffset: normalizedOffset,
+    };
   }
 
   const reviewIds = reviewRows.map((review) => review.id);
@@ -428,17 +460,21 @@ export async function getPlaceReviewsAction(placeId: string): Promise<PlaceRevie
     }
   }
 
-  return reviewRows.map((review) => ({
-    id: review.id,
-    authorId: review.user_id,
-    authorName: getReviewAuthorName(review),
-    rating: review.rating,
-    comment: review.comment?.trim() || "コメントなし",
-    date: review.created_at,
-    tags: tagsByReviewId.get(review.id) ?? [],
-    initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
-    initialIsLiked: likedReviewIds.has(review.id),
-  }));
+  return {
+    reviews: reviewRows.map((review) => ({
+      id: review.id,
+      authorId: review.user_id,
+      authorName: getReviewAuthorName(review),
+      rating: review.rating,
+      comment: review.comment?.trim() || "コメントなし",
+      date: review.created_at,
+      tags: tagsByReviewId.get(review.id) ?? [],
+      initialLikeCount: likeCountsByReviewId.get(review.id) ?? 0,
+      initialIsLiked: likedReviewIds.has(review.id),
+    })),
+    hasMore,
+    nextOffset: normalizedOffset + reviewRows.length,
+  };
 }
 
 export async function getPlaceGoogleBusinessDetailsAction(

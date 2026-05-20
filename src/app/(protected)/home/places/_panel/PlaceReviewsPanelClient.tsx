@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
+import { getPlaceReviewsAction } from "@/features/places/actions";
 import type { PlaceReview } from "@/features/places/types";
 import { ReviewCard } from "@/features/review/components/ReviewCard";
 import { ReviewDetail } from "@/features/review/components/ReviewDetail";
@@ -12,20 +13,31 @@ import { toggleReviewLikeAction } from "@/features/review/actions";
 
 type PlaceReviewsPanelClientProps = {
   detailHref: string;
+  hasMore: boolean;
   initialReviewId?: string;
+  nextOffset: number;
   placeName: string;
+  placeId: string;
   reviews: PlaceReview[];
   reviewsHref: string;
+  totalReviewCount: number;
 };
 
 export function PlaceReviewsPanelClient({
   detailHref,
+  hasMore: initialHasMore,
   initialReviewId,
+  nextOffset: initialNextOffset,
   placeName,
+  placeId,
   reviews,
   reviewsHref,
+  totalReviewCount,
 }: PlaceReviewsPanelClientProps) {
   const [reviewItems, setReviewItems] = useState(reviews);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [nextOffset, setNextOffset] = useState(initialNextOffset);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(initialReviewId ?? null);
   const selectedReview = reviewItems.find((review) => review.id === selectedReviewId) ?? null;
   const isReviewDetail = Boolean(selectedReview);
@@ -50,6 +62,31 @@ export function PlaceReviewsPanelClient({
   const showReviewList = () => {
     setSelectedReviewId(null);
     window.history.replaceState(null, "", reviewsHref);
+  };
+
+  const loadMoreReviews = async () => {
+    if (isLoadingMore || !hasMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    try {
+      const reviewsPage = await getPlaceReviewsAction(placeId, {
+        offset: nextOffset,
+      });
+
+      setReviewItems((currentReviews) => {
+        const currentReviewIds = new Set(currentReviews.map((review) => review.id));
+        const newReviews = reviewsPage.reviews.filter((review) => !currentReviewIds.has(review.id));
+
+        return [...currentReviews, ...newReviews];
+      });
+      setHasMore(reviewsPage.hasMore);
+      setNextOffset(reviewsPage.nextOffset);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   return (
@@ -82,7 +119,7 @@ export function PlaceReviewsPanelClient({
         <div className="-my-1 flex items-center gap-2">
           <h4 className="mt-0 text-lg font-bold break-words text-slate-950">{placeName}</h4>
           {!isReviewDetail ? (
-            <p className="mt-0 text-xs font-medium text-slate-500">{reviewItems.length}件</p>
+            <p className="mt-0 text-xs font-medium text-slate-500">{totalReviewCount}件</p>
           ) : null}
         </div>
       </div>
@@ -119,6 +156,18 @@ export function PlaceReviewsPanelClient({
                   onClick={setSelectedReviewId}
                 />
               ))}
+              {hasMore ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 w-full"
+                  disabled={isLoadingMore}
+                  onClick={loadMoreReviews}
+                >
+                  {isLoadingMore ? "読み込み中..." : "もっと見る"}
+                </Button>
+              ) : null}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
