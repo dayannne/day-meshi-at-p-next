@@ -1,10 +1,8 @@
 import { MapMarkersSync } from "@/components/google-maps";
 import { getPlacesAction } from "@/features/places/actions";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-import { ExistingPlaceReviewPanel } from "./_panel/ExistingPlaceReviewPanel";
 import { NewPlaceReviewPanel } from "./_panel/NewPlaceReviewPanel";
-import { PlaceDetailPanel } from "./_panel/PlaceDetailPanel";
-import { PlaceReviewsPanel } from "./_panel/PlaceReviewsPanel";
+import { PlacesPanelManager } from "./_panel/PlacesPanelManager";
 import {
   buildPlacesHref,
   EXISTING_PLACE_REVIEW_PANEL,
@@ -113,25 +111,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       panel: PLACE_DETAIL_PANEL,
       placeId,
     });
-  const buildExistingPlaceReviewHref = (placeId: string) =>
-    buildPlacesHref(baseParams, {
-      page: pagination.page,
-      panel: EXISTING_PLACE_REVIEW_PANEL,
-      placeId,
-    });
-  const buildPlaceReviewsHref = (placeId: string) =>
-    buildPlacesHref(baseParams, {
-      page: pagination.page,
-      panel: PLACE_REVIEWS_PANEL,
-      placeId,
-    });
-  const buildPlaceReviewDetailHref = (placeId: string, reviewId: string) =>
-    buildPlacesHref(baseParams, {
-      page: pagination.page,
-      panel: PLACE_REVIEWS_PANEL,
-      placeId,
-      reviewId,
-    });
   const placeDetailHrefs = Object.fromEntries(
     places.map((place) => [place.id, buildPlaceDetailHref(place.id)])
   );
@@ -159,32 +138,14 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
       {isNewPlaceReviewPanel ? (
         <NewPlaceReviewPanel closeHref={closePanelHref} page={pagination.page} />
       ) : null}
-      {isPlaceDetailPanel && selectedPlaceId ? (
-        <PlaceDetailPanel
-          closeHref={closePanelHref}
-          placeId={selectedPlaceId}
-          detailHref={buildPlaceDetailHref(selectedPlaceId)}
-          reviewHref={buildExistingPlaceReviewHref(selectedPlaceId)}
-          reviewDetailHref={(reviewId) => buildPlaceReviewDetailHref(selectedPlaceId, reviewId)}
-          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
-        />
-      ) : null}
-      {isExistingPlaceReviewPanel && selectedPlaceId ? (
-        <ExistingPlaceReviewPanel
-          closeHref={closePanelHref}
-          detailHref={buildPlaceDetailHref(selectedPlaceId)}
-          placeId={selectedPlaceId}
-        />
-      ) : null}
-      {isPlaceReviewsPanel && selectedPlaceId ? (
-        <PlaceReviewsPanel
-          closeHref={closePanelHref}
-          detailHref={buildPlaceDetailHref(selectedPlaceId)}
-          initialReviewId={selectedReviewId}
-          placeId={selectedPlaceId}
-          reviewsHref={buildPlaceReviewsHref(selectedPlaceId)}
-        />
-      ) : null}
+      <PlacesPanelManager
+        basePath="/home/places"
+        panel={panelName}
+        placeId={selectedPlaceId}
+        reviewId={selectedReviewId}
+        page={pagination.page}
+        baseParams={baseParams}
+      />
     </div>
   );
 }

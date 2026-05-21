@@ -574,6 +574,50 @@ export async function toggleBookmarkAction(placeId: string, isBookmarked: boolea
     }
   }
 
+  // 即時削除を避けるため、特定のページの再検証は行わない（クライアント側の状態管理でUIを更新し、リフレッシュ時に反映させる）
+  // 即時削除を避けるため、特定のページの再検証は行わない（クライアント側の状態管理でUIを更新し、リフレッシュ時に反映させる）
   revalidatePath("/home/places", "page");
   revalidatePath("/home/bookmarks", "page");
+}
+
+export async function getBookmarkedPlacesAction(limit?: number): Promise<Place[]> {
+  const { userId } = await requireActiveUser();
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("places")
+    .select(
+      `
+      id,
+      google_place_id,
+      name,
+      category,
+      price_range,
+      lat,
+      lng,
+      image_url,
+      photo_attributions,
+      is_gochimeshi,
+      avg_rating,
+      review_count,
+      distance_from_office_meters,
+      walking_duration_seconds,
+      place_bookmarks!inner(user_id, created_at)
+    `
+    )
+    .eq("place_bookmarks.user_id", userId)
+    .order("created_at", { foreignTable: "place_bookmarks", ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Failed to load bookmarked places:", error);
+    throw new Error("Failed to load bookmarked places.");
+  }
+
+  return data.map((p) => toPlace(p, userId));
 }

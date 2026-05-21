@@ -3,25 +3,29 @@ export const PLACE_DETAIL_PANEL = "place-detail";
 export const EXISTING_PLACE_REVIEW_PANEL = "existing-place-review";
 export const PLACE_REVIEWS_PANEL = "place-reviews";
 
-type PlacesPanel =
+export type PlacesPanel =
   | typeof NEW_PLACE_REVIEW_PANEL
   | typeof PLACE_DETAIL_PANEL
   | typeof EXISTING_PLACE_REVIEW_PANEL
   | typeof PLACE_REVIEWS_PANEL;
 
-type BuildPlacesHrefOptions = {
-  page: number;
+type BuildPanelHrefOptions = {
+  basePath?: string;
+  page?: number;
   panel?: PlacesPanel;
   placeId?: string;
   reviewId?: string;
 };
 
-export function buildPlacesHref(
+export function buildPanelHref(
   baseParams: string | URLSearchParams,
-  { page, panel, placeId, reviewId }: BuildPlacesHrefOptions
+  { basePath = "/home/places", page, panel, placeId, reviewId }: BuildPanelHrefOptions
 ): string {
   const params = new URLSearchParams(baseParams);
-  params.set("page", String(page));
+
+  if (page !== undefined) {
+    params.set("page", String(page));
+  }
 
   if (panel) {
     params.set("panel", panel);
@@ -42,7 +46,16 @@ export function buildPlacesHref(
 
   if (panel === PLACE_REVIEWS_PANEL && reviewId) {
     params.set("reviewId", reviewId);
+  } else {
+    params.delete("reviewId");
   }
 
-  return `/home/places?${params.toString()}`;
+  const queryString = params.toString();
+  return queryString ? `${basePath}?${queryString}` : basePath;
 }
+
+// 既存のコードとの互換性のためのエイリアス
+export const buildPlacesHref = (
+  baseParams: string | URLSearchParams,
+  options: { page: number; panel?: PlacesPanel; placeId?: string; reviewId?: string }
+) => buildPanelHref(baseParams, options);
