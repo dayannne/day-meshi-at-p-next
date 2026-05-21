@@ -575,8 +575,9 @@ export async function toggleBookmarkAction(placeId: string, isBookmarked: boolea
   }
 
   // 即時削除を避けるため、特定のページの再検証は行わない（クライアント側の状態管理でUIを更新し、リフレッシュ時に反映させる）
-  // revalidatePath("/home/places", "page");
-  // revalidatePath("/home/bookmarks", "page");
+  // 即時削除を避けるため、特定のページの再検証は行わない（クライアント側の状態管理でUIを更新し、リフレッシュ時に反映させる）
+  revalidatePath("/home/places", "page");
+  revalidatePath("/home/bookmarks", "page");
 }
 
 export async function getBookmarkedPlacesAction(limit?: number): Promise<Place[]> {
