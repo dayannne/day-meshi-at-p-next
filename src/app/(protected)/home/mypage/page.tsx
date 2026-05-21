@@ -4,11 +4,28 @@ import { NicknameEditForm } from "@/features/profile/components/NicknameEditForm
 import { getBookmarkedPlacesAction } from "@/features/places/actions";
 import { PlaceList } from "@/features/places/components/PlaceList";
 import { createClient } from "@/lib/supabase/server";
-import { buildPlacesHref, PLACE_DETAIL_PANEL } from "../places/_panel/panelLinks";
+import {
+  buildPanelHref,
+  PLACE_DETAIL_PANEL,
+  EXISTING_PLACE_REVIEW_PANEL,
+  PLACE_REVIEWS_PANEL,
+} from "../places/_panel/panelLinks";
 import { MapMarkersSync } from "@/components/google-maps";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
+import { PlaceDetailPanel } from "../places/_panel/PlaceDetailPanel";
+import { ExistingPlaceReviewPanel } from "../places/_panel/ExistingPlaceReviewPanel";
+import { PlaceReviewsPanel } from "../places/_panel/PlaceReviewsPanel";
 
-export default async function Mypage() {
+type MypageProps = {
+  searchParams: Promise<{
+    panel?: string;
+    placeId?: string;
+    reviewId?: string;
+  }>;
+};
+
+export default async function Mypage({ searchParams }: MypageProps) {
+  const { panel, placeId, reviewId } = await searchParams;
   const user = await requireActiveUser();
   const supabase = await createClient();
 
@@ -26,15 +43,15 @@ export default async function Mypage() {
     bookmarks: bookmarksCountResult.count ?? 0,
   };
 
+  const buildDetailHref = (pid: string) =>
+    buildPanelHref("", {
+      basePath: "/home/mypage",
+      panel: PLACE_DETAIL_PANEL,
+      placeId: pid,
+    });
+
   const placeDetailHrefs = Object.fromEntries(
-    bookmarkedPlaces.map((place) => [
-      place.id,
-      buildPlacesHref("", {
-        page: 1,
-        panel: PLACE_DETAIL_PANEL,
-        placeId: place.id,
-      }),
-    ])
+    bookmarkedPlaces.map((place) => [place.id, buildDetailHref(place.id)])
   );
 
   const placeMarkers = toPlaceMarkers(bookmarkedPlaces).map((marker) => ({
@@ -42,9 +59,13 @@ export default async function Mypage() {
     href: placeDetailHrefs[marker.id],
   }));
 
+  const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL && Boolean(placeId);
+  const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL && Boolean(placeId);
+  const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL && Boolean(placeId);
+
   return (
     <>
-      <MapMarkersSync source="bookmarks" markers={placeMarkers} />
+      <MapMarkersSync source="mypage" markers={placeMarkers} selectedMarkerId={placeId} />
       <div className="flex flex-col gap-4 border-b border-b-slate-200 bg-white p-6">
         <h1 className="text-xl font-bold text-slate-900">マイページ</h1>
         <div className="bg-primary-background flex w-full flex-col gap-4 rounded-lg p-4">
@@ -86,7 +107,7 @@ export default async function Mypage() {
 
         {/* TODO: レビューコンポーネントの導入 */}
         <div className="flex items-center justify-center py-10 text-sm text-slate-500">
-          まだレビュー가ありません
+          まだレビューがありません
         </div>
       </div>
 
@@ -106,10 +127,58 @@ export default async function Mypage() {
           <PlaceList places={bookmarkedPlaces} placeDetailHrefs={placeDetailHrefs} />
         ) : (
           <div className="flex items-center justify-center py-10 text-sm text-slate-500">
-            まだブックマークした店がありません
+            まだブックマーク한店がありません
           </div>
         )}
       </div>
+
+      {isPlaceDetailPanel && placeId ? (
+        <PlaceDetailPanel
+          closeHref="/home/mypage"
+          placeId={placeId}
+          detailHref={buildDetailHref(placeId)}
+          reviewHref={buildPanelHref("", {
+            basePath: "/home/mypage",
+            panel: EXISTING_PLACE_REVIEW_PANEL,
+            placeId,
+          })}
+          reviewDetailHref={(rid) =>
+            buildPanelHref("", {
+              basePath: "/home/mypage",
+              panel: PLACE_REVIEWS_PANEL,
+              placeId,
+              reviewId: rid,
+            })
+          }
+          reviewsHref={buildPanelHref("", {
+            basePath: "/home/mypage",
+            panel: PLACE_REVIEWS_PANEL,
+            placeId,
+          })}
+        />
+      ) : null}
+
+      {isExistingPlaceReviewPanel && placeId ? (
+        <ExistingPlaceReviewPanel
+          closeHref={buildDetailHref(placeId)}
+          detailHref={buildDetailHref(placeId)}
+          placeId={placeId}
+        />
+      ) : null}
+
+      {isPlaceReviewsPanel && placeId ? (
+        <PlaceReviewsPanel
+          closeHref={buildDetailHref(placeId)}
+          detailHref={buildDetailHref(placeId)}
+          initialReviewId={reviewId}
+          placeId={placeId}
+          reviewsHref={buildPanelHref("", {
+            basePath: "/home/mypage",
+            panel: PLACE_REVIEWS_PANEL,
+            placeId,
+          })}
+        />
+      ) : null}
     </>
   );
 }

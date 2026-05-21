@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 import type { GoogleMapMarkerItem } from "@/components/google-maps/types";
 
-export type MapMarkerSource = "places" | "place-detail" | "bookmarks" | "review-place";
+export type MapMarkerSource = "places" | "place-detail" | "bookmarks" | "mypage" | "review-place";
 type MapMarkerLayers = Partial<Record<MapMarkerSource, GoogleMapMarkerItem[]>>;
 
 export type MapMarkerStore = {
@@ -20,6 +20,7 @@ const MARKER_SOURCE_ORDER: MapMarkerSource[] = [
   "places",
   "place-detail",
   "bookmarks",
+  "mypage",
   "review-place",
 ];
 
