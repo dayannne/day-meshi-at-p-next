@@ -8,9 +8,7 @@ import {
 } from "../places/_panel/panelLinks";
 import { MapMarkersSync } from "@/components/google-maps";
 import { toPlaceMarkers } from "@/features/places/placeMarkers";
-import { PlaceDetailPanel } from "../places/_panel/PlaceDetailPanel";
-import { ExistingPlaceReviewPanel } from "../places/_panel/ExistingPlaceReviewPanel";
-import { PlaceReviewsPanel } from "../places/_panel/PlaceReviewsPanel";
+import { PlacesPanelManager } from "../places/_panel/PlacesPanelManager";
 
 type BookmarksPageProps = {
   searchParams: Promise<{
@@ -40,10 +38,6 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
     href: placeDetailHrefs[marker.id],
   }));
 
-  const isPlaceDetailPanel = panel === PLACE_DETAIL_PANEL && Boolean(placeId);
-  const isExistingPlaceReviewPanel = panel === EXISTING_PLACE_REVIEW_PANEL && Boolean(placeId);
-  const isPlaceReviewsPanel = panel === PLACE_REVIEWS_PANEL && Boolean(placeId);
-
   return (
     <>
       <MapMarkersSync source="bookmarks" markers={placeMarkers} selectedMarkerId={placeId} />
@@ -64,53 +58,12 @@ export default async function BookmarksPage({ searchParams }: BookmarksPageProps
         </div>
       </div>
 
-      {isPlaceDetailPanel && placeId ? (
-        <PlaceDetailPanel
-          closeHref="/home/bookmarks"
-          placeId={placeId}
-          detailHref={buildDetailHref(placeId)}
-          reviewHref={buildPanelHref("", {
-            basePath: "/home/bookmarks",
-            panel: EXISTING_PLACE_REVIEW_PANEL,
-            placeId,
-          })}
-          reviewDetailHref={(rid) =>
-            buildPanelHref("", {
-              basePath: "/home/bookmarks",
-              panel: PLACE_REVIEWS_PANEL,
-              placeId,
-              reviewId: rid,
-            })
-          }
-          reviewsHref={buildPanelHref("", {
-            basePath: "/home/bookmarks",
-            panel: PLACE_REVIEWS_PANEL,
-            placeId,
-          })}
-        />
-      ) : null}
-
-      {isExistingPlaceReviewPanel && placeId ? (
-        <ExistingPlaceReviewPanel
-          closeHref={buildDetailHref(placeId)}
-          detailHref={buildDetailHref(placeId)}
-          placeId={placeId}
-        />
-      ) : null}
-
-      {isPlaceReviewsPanel && placeId ? (
-        <PlaceReviewsPanel
-          closeHref={buildDetailHref(placeId)}
-          detailHref={buildDetailHref(placeId)}
-          initialReviewId={reviewId}
-          placeId={placeId}
-          reviewsHref={buildPanelHref("", {
-            basePath: "/home/bookmarks",
-            panel: PLACE_REVIEWS_PANEL,
-            placeId,
-          })}
-        />
-      ) : null}
+      <PlacesPanelManager
+        basePath="/home/bookmarks"
+        panel={panel}
+        placeId={placeId}
+        reviewId={reviewId}
+      />
     </>
   );
 }
